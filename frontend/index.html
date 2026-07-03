@@ -3,95 +3,595 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FXGuard AI | Simple USD/RWF Payment Guidance</title>
+  <title>FXGuard AI | Decision Support for USD - RWF Payments</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #f6f8fb;
-      --surface: #ffffff;
-      --card: #ffffff;
-      --card-soft: #f8fafc;
-      --border: #e5e7eb;
-      --border-strong: #cbd5e1;
-      --text: #0f172a;
-      --muted: #64748b;
-      --muted-2: #94a3b8;
-      --blue: #2563eb;
-      --blue-soft: #eff6ff;
-      --green: #059669;
-      --green-soft: #ecfdf5;
-      --red: #dc2626;
-      --red-soft: #fef2f2;
-      --amber: #d97706;
-      --amber-soft: #fffbeb;
-      --shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+      --bg: #f4efe7;
+      --bg-2: #f7f3eb;
+      --surface: rgba(255, 255, 255, 0.82);
+      --surface-strong: #ffffff;
+      --surface-soft: #fbf8f3;
+      --line: rgba(15, 23, 42, 0.10);
+      --line-strong: rgba(15, 23, 42, 0.16);
+      --text: #142033;
+      --muted: #5f6b7a;
+      --muted-2: #8793a4;
+      --ink: #0e1626;
+      --blue: #2457d6;
+      --blue-2: #113a9f;
+      --blue-soft: #e9efff;
+      --green: #0f8b6c;
+      --green-soft: #e7f7f1;
+      --amber: #ad6a10;
+      --amber-soft: #fff4df;
+      --red: #c43c3c;
+      --red-soft: #feecec;
+      --shadow: 0 20px 60px rgba(19, 31, 48, 0.10);
+      --shadow-soft: 0 10px 30px rgba(19, 31, 48, 0.08);
     }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: Inter, Arial, sans-serif; background: var(--bg); color: var(--text); }
-    .app { min-height: 100vh; display: grid; grid-template-columns: 270px 1fr; }
-    .sidebar { background: #0f172a; color: white; padding: 28px 22px; display: flex; flex-direction: column; gap: 24px; }
-    .brand { display: flex; align-items: center; gap: 12px; }
-    .logo { width: 44px; height: 44px; background: linear-gradient(135deg, #2563eb, #22c55e); border-radius: 14px; display: grid; place-items: center; font-weight: 800; }
-    .brand h1 { font-size: 19px; line-height: 1.05; margin: 0; }
-    .brand p { font-size: 12px; color: #94a3b8; margin: 4px 0 0; }
-    .nav { display: grid; gap: 8px; }
-    .nav button { border: 0; background: transparent; color: #cbd5e1; padding: 13px 14px; border-radius: 14px; text-align: left; font-weight: 600; cursor: pointer; }
-    .nav button.active, .nav button:hover { color: white; background: rgba(255,255,255,0.10); }
-    .side-card { margin-top: auto; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.10); border-radius: 18px; padding: 18px; }
-    .side-card h3 { font-size: 15px; margin: 0 0 6px; }
-    .side-card p { color: #cbd5e1; font-size: 13px; line-height: 1.45; margin: 0; }
-    .main { padding: 28px; overflow: auto; }
-    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
-    .title h2 { margin: 0; font-size: 28px; letter-spacing: -0.04em; }
-    .title p { margin: 8px 0 0; color: var(--muted); }
-    .badge { display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 999px; background: var(--surface); color: var(--muted); border: 1px solid var(--border); font-size: 13px; font-weight: 600; }
-    .grid { display: grid; gap: 18px; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: Manrope, system-ui, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(36, 87, 214, 0.14), transparent 30%),
+        radial-gradient(circle at 85% 12%, rgba(15, 139, 108, 0.12), transparent 24%),
+        linear-gradient(180deg, #faf7f1 0%, var(--bg) 48%, #f8f4ed 100%);
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: linear-gradient(rgba(20, 32, 51, 0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(20, 32, 51, 0.025) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,0.16), rgba(0,0,0,0));
+    }
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      gap: 0;
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 24px;
+      background: linear-gradient(180deg, rgba(15, 22, 38, 0.94), rgba(15, 22, 38, 0.98));
+      color: white;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      box-shadow: 20px 0 50px rgba(4, 9, 17, 0.12);
+    }
+    .brand {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+    .logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      color: white;
+      background: linear-gradient(135deg, #4d78ff, #20b28b);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      font-family: Fraunces, Georgia, serif;
+    }
+    .brand p {
+      margin: 6px 0 0;
+      color: rgba(255,255,255,0.68);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .nav {
+      display: grid;
+      gap: 8px;
+    }
+    .nav button {
+      appearance: none;
+      border: 1px solid transparent;
+      background: transparent;
+      color: rgba(255,255,255,0.72);
+      padding: 13px 14px;
+      border-radius: 14px;
+      text-align: left;
+      font: inherit;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      transition: background-color .18s ease, color .18s ease, transform .18s ease, border-color .18s ease;
+    }
+    .nav button:hover,
+    .nav button.active {
+      color: white;
+      background: rgba(255,255,255,0.10);
+      border-color: rgba(255,255,255,0.08);
+      transform: translateX(2px);
+    }
+    .side-card {
+      margin-top: auto;
+      padding: 18px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .side-card h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      letter-spacing: -0.02em;
+    }
+    .side-card p {
+      margin: 0;
+      color: rgba(255,255,255,0.74);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .main {
+      padding: 28px;
+      overflow: auto;
+    }
+    .shell {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      gap: 18px;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--blue-2);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-size: 11px;
+    }
+    .title h2 {
+      margin: 0;
+      font-size: clamp(30px, 3.6vw, 46px);
+      line-height: .96;
+      letter-spacing: -0.06em;
+      font-family: Fraunces, Georgia, serif;
+    }
+    .title p {
+      margin: 10px 0 0;
+      max-width: 70ch;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .title p.emphasis {
+      margin-top: 10px;
+      color: var(--ink);
+      font-weight: 700;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      box-shadow: var(--shadow-soft);
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .grid {
+      display: grid;
+      gap: 18px;
+    }
     .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .two-col { grid-template-columns: 1.25fr 0.75fr; align-items: start; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 22px; padding: 22px; box-shadow: var(--shadow); }
-    .stat small { color: var(--muted); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: .08em; }
-    .stat strong { display: block; margin-top: 10px; font-size: 25px; letter-spacing: -.03em; }
-    .stat span { display: block; color: var(--muted); margin-top: 6px; font-size: 13px; }
-    .section-title { font-size: 16px; margin: 0 0 14px; }
-    .currency-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px; border-radius: 18px; background: var(--card-soft); border: 1px solid var(--border); }
-    .currency-card h3 { margin: 0; font-size: 19px; }
-    .currency-card p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
-    .risk-pill { border-radius: 999px; padding: 7px 11px; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+    .two-col { grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); }
+    .hero-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+      gap: 18px;
+    }
+    .hero-copy,
+    .hero-aside,
+    .card {
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+    }
+    .hero-copy {
+      padding: 22px;
+      overflow: hidden;
+      position: relative;
+    }
+    .hero-copy::after {
+      content: "";
+      position: absolute;
+      inset: auto -80px -80px auto;
+      width: 240px;
+      height: 240px;
+      background: radial-gradient(circle, rgba(36,87,214,0.20), transparent 65%);
+      pointer-events: none;
+    }
+    .hero-copy h3 {
+      margin: 0 0 8px;
+      font-family: Fraunces, Georgia, serif;
+      font-size: clamp(18px, 1.85vw, 24px);
+      line-height: 1.08;
+      letter-spacing: -0.05em;
+    }
+    .hero-copy p {
+      margin: 0;
+      max-width: 62ch;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .btn {
+      appearance: none;
+      border: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 18px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--blue), var(--blue-2));
+      color: white;
+      font: inherit;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      box-shadow: 0 14px 28px rgba(36,87,214,0.22);
+      transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+    }
+    .btn:hover { transform: translateY(-1px); filter: brightness(1.02); }
+    .btn.secondary {
+      background: rgba(255,255,255,0.74);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+    .btn.full { width: 100%; }
+    .hero-feeds {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .feed {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid var(--line);
+    }
+    .feed small {
+      display: block;
+      color: var(--muted-2);
+      text-transform: uppercase;
+      letter-spacing: .10em;
+      font-size: 11px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+    .feed strong {
+      display: block;
+      font-size: 20px;
+      letter-spacing: -0.04em;
+    }
+    .feed span {
+      display: block;
+      color: var(--muted);
+      margin-top: 6px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .hero-aside {
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+    }
+    .aside-note {
+      padding: 16px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(36,87,214,0.10), rgba(36,87,214,0.06));
+      border: 1px solid rgba(36,87,214,0.12);
+    }
+    .aside-note h4 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      letter-spacing: -0.02em;
+    }
+    .aside-note p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 13px;
+    }
+    .mini-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .mini-list li {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.76);
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .mini-list strong {
+      color: var(--text);
+      font-size: 14px;
+    }
+    .card {
+      padding: 22px;
+    }
+    .card.soft {
+      background: linear-gradient(180deg, rgba(255,255,255,0.86), rgba(248, 244, 237, 0.92));
+    }
+    .stat small,
+    .section-label {
+      color: var(--muted-2);
+      text-transform: uppercase;
+      font-weight: 800;
+      font-size: 11px;
+      letter-spacing: .11em;
+    }
+    .stat strong {
+      display: block;
+      margin-top: 10px;
+      font-size: 28px;
+      letter-spacing: -0.05em;
+    }
+    .stat span {
+      display: block;
+      color: var(--muted);
+      margin-top: 7px;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 18px;
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+      font-family: Fraunces, Georgia, serif;
+    }
+    .section-copy {
+      margin: -2px 0 14px;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 14px;
+    }
+    .currency-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px;
+      border-radius: 18px;
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+    }
+    .currency-card h3 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.04em;
+      font-family: Fraunces, Georgia, serif;
+    }
+    .currency-card p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 13px;
+      max-width: 60ch;
+    }
+    .risk-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
     .risk-Low { background: var(--green-soft); color: var(--green); }
     .risk-Medium { background: var(--amber-soft); color: var(--amber); }
     .risk-High { background: var(--red-soft); color: var(--red); }
     .form { display: grid; gap: 14px; }
-    label { display: block; color: var(--muted); font-size: 13px; font-weight: 700; margin-bottom: 7px; }
-    input, select, textarea { width: 100%; border: 1px solid var(--border-strong); border-radius: 14px; background: white; color: var(--text); padding: 13px 14px; font-size: 15px; outline: none; }
-    input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(37,99,235,.10); }
-    .toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .toggle button { padding: 12px; border: 1px solid var(--border); background: white; border-radius: 14px; font-weight: 800; cursor: pointer; color: var(--muted); }
-    .toggle button.selected { background: var(--blue); color: white; border-color: var(--blue); }
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; background: var(--blue); color: white; padding: 14px 18px; border-radius: 14px; font-weight: 800; cursor: pointer; font-size: 15px; }
-    .btn.secondary { background: white; color: var(--text); border: 1px solid var(--border); }
-    .btn.full { width: 100%; }
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin-bottom: 7px;
+    }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line-strong);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.92);
+      color: var(--text);
+      padding: 13px 14px;
+      font: inherit;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(36,87,214,0.55);
+      box-shadow: 0 0 0 4px rgba(36,87,214,0.10);
+    }
+    .toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .toggle button {
+      padding: 12px 13px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.82);
+      border-radius: 14px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      color: var(--muted);
+      transition: background-color .18s ease, color .18s ease, border-color .18s ease;
+    }
+    .toggle button.selected {
+      background: linear-gradient(135deg, var(--blue), var(--blue-2));
+      color: white;
+      border-color: transparent;
+    }
+    .screen { display: none; animation: fadeUp .24s ease both; }
+    .screen.active { display: block; }
     .hidden { display: none !important; }
-    .result-hero { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-    .big-risk { padding: 28px; border-radius: 24px; border: 1px solid var(--border); background: linear-gradient(180deg, #ffffff, #f8fafc); }
-    .big-risk small { color: var(--muted); text-transform: uppercase; font-weight: 800; font-size: 12px; letter-spacing: .08em; }
-    .big-risk h3 { margin: 12px 0 8px; font-size: 42px; letter-spacing: -.05em; }
-    .big-risk p { margin: 0; color: var(--muted); line-height: 1.5; }
-    .driver { display: flex; justify-content: space-between; gap: 18px; padding: 13px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .result-hero {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .big-risk {
+      padding: 22px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248, 244, 237, 0.98));
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-soft);
+    }
+    .big-risk small {
+      color: var(--muted-2);
+      text-transform: uppercase;
+      font-weight: 900;
+      font-size: 11px;
+      letter-spacing: .11em;
+    }
+    .big-risk h3 {
+      margin: 12px 0 8px;
+      font-family: Manrope, system-ui, sans-serif;
+      font-weight: 800;
+      font-size: clamp(20px, 2.1vw, 30px);
+      letter-spacing: -0.06em;
+      line-height: 1.08;
+    }
+    .big-risk p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 14px;
+    }
+    .driver {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
     .driver:last-child { border-bottom: 0; }
     .driver span { color: var(--muted); }
     .driver strong { font-variant-numeric: tabular-nums; }
-    .recommendation { padding: 16px; background: var(--blue-soft); border: 1px solid #bfdbfe; color: #1e3a8a; border-radius: 16px; margin-bottom: 12px; line-height: 1.5; }
-    .disclaimer { color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 14px; }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th, td { text-align: left; padding: 13px; border-bottom: 1px solid var(--border); }
-    th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
-    .toast { position: fixed; right: 24px; bottom: 24px; background: #0f172a; color: white; padding: 15px 18px; border-radius: 14px; box-shadow: var(--shadow); display: none; }
-    .screen { display: none; }
-    .screen.active { display: block; }
-    @media (max-width: 1000px) { .app { grid-template-columns: 1fr; } .sidebar { display: none; } .stats, .two-col, .result-hero { grid-template-columns: 1fr; } }
+    .recommendation {
+      padding: 14px 16px;
+      border-radius: 16px;
+      margin-bottom: 12px;
+      line-height: 1.55;
+      background: var(--blue-soft);
+      border: 1px solid rgba(36,87,214,0.18);
+      color: #16398f;
+    }
+    .disclaimer {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+      margin-top: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      text-align: left;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th {
+      color: var(--muted-2);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .11em;
+    }
+    .toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      background: #0f172a;
+      color: white;
+      padding: 15px 18px;
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      display: none;
+      z-index: 20;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 1100px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; }
+      .hero-panel, .stats, .two-col, .result-hero, .hero-feeds { grid-template-columns: 1fr; }
+      .topbar { flex-direction: column; }
+    }
+    @media (max-width: 720px) {
+      .main { padding: 16px; }
+      .sidebar { padding: 18px; }
+      .card, .hero-copy, .hero-aside { padding: 18px; }
+      .currency-card { flex-direction: column; align-items: flex-start; }
+      .hero-actions { width: 100%; }
+      .hero-actions .btn { width: 100%; }
+    }
   </style>
 </head>
 <body>
@@ -99,126 +599,237 @@
     <aside class="sidebar">
       <div class="brand">
         <div class="logo">FX</div>
-        <div><h1>FXGuard AI</h1><p>Simple payment guidance for USD/RWF</p></div>
+        <div>
+          <h1>FXGuard AI</h1>
+          <p>Clear payment guidance for USD - RWF decisions, built for real importer workflows.</p>
+        </div>
       </div>
-      <div class="nav">
+
+      <div class="nav" aria-label="Primary navigation">
         <button class="active" data-screen="dashboard">Dashboard</button>
-        <button data-screen="assessment">New Assessment</button>
-        <button data-screen="results">Risk Results</button>
-        <button data-screen="decision">Recommendations</button>
-        <button data-screen="feedback">User Feedback</button>
+        <button data-screen="assessment">Payment check</button>
+        <button data-screen="results">Decision view</button>
+        <button data-screen="decision">Action plan</button>
+        <button data-screen="feedback">Participant feedback</button>
       </div>
+
       <div class="side-card">
-        <h3>Stay one step ahead</h3>
-        <p>Use the page below to check whether a payment may need more room in your budget.</p>
+        <h3>Designed to reduce uncertainty</h3>
+        <p>The interface surfaces the current rate, what it may mean for the payment, and what action a person can take next.</p>
       </div>
     </aside>
 
     <main class="main">
-      <div class="topbar">
-        <div class="title">
-          <h2 id="pageTitle">Dashboard</h2>
-          <p id="pageSubtitle">A quick view of the latest USD/RWF rate and what it may mean for your payment.</p>
-          <p id="pageSubtitleEmphasis" style="margin: 6px 0 0; color: #0f172a; font-weight: 700; font-size: 15px; line-height: 1.5;">See whether your USD payment may become more expensive soon, using recent Rwanda rate data.</p>
-        </div>
-        <div class="badge" id="dataBadge">Loading recent rate data...</div>
-      </div>
-
-      <section class="screen active" id="dashboard">
-        <div class="grid stats">
-          <div class="card stat"><small>Currency Pair</small><strong>USD/RWF</strong><span>Focused on US dollar payments</span></div>
-          <div class="card stat"><small>Latest Rate</small><strong id="latestRate">—</strong><span id="latestDate">Loading...</span></div>
-          <div class="card stat"><small>7-Day View</small><strong id="model7">Ready</strong><span>Short-term outlook</span></div>
-          <div class="card stat"><small>14-Day View</small><strong id="model14">Ready</strong><span>Longer-term outlook</span></div>
-        </div>
-        <div class="grid two-col" style="margin-top:18px;">
-          <div class="card">
-            <h3 class="section-title">Recent USD/RWF Trend</h3>
-            <p style="color:var(--muted); margin:-4px 0 12px; line-height:1.5;">When the line goes up, future USD payments may cost a little more. When it goes down, they may cost a little less.</p>
-            <canvas id="historyChart" height="120"></canvas>
+      <div class="shell">
+        <div class="topbar">
+          <div class="title">
+            <p class="eyebrow">USD - RWF decision support</p>
+            <h2 id="pageTitle">Dashboard</h2>
+            <p id="pageSubtitle">A compact view of the latest rate, recent movement, and the next step if a USD payment is coming up.</p>
+            <p id="pageSubtitleEmphasis" class="emphasis">It is here to help someone decide whether to wait, set aside more, or move ahead with confidence.</p>
           </div>
-          <div class="card">
-            <h3 class="section-title">Quick Risk Check</h3>
-            <div class="form">
-              <div><label>Supplier invoice amount (USD)</label><input id="quickAmount" type="number" value="10000" min="1" /></div>
-              <div><label>Look ahead</label><div class="toggle"><button class="selected" data-horizon="7">7 days</button><button data-horizon="14">14 days</button></div></div>
-              <button class="btn full" id="quickAnalyze">Check payment outlook →</button>
+          <div class="badge" id="dataBadge">Loading recent rate data...</div>
+        </div>
+
+        <section class="screen active" id="dashboard">
+          <div class="hero-panel">
+            <div class="hero-copy">
+              <div class="section-label">At a glance</div>
+              <h3>See whether this payment still feels safe.</h3>
+              <div class="hero-actions">
+                <button class="btn" id="heroCheckBtn">Check a payment</button>
+                <button class="btn secondary" onclick="showScreen('assessment')">Review the assessment form</button>
+              </div>
+              <div class="hero-feeds">
+                <div class="feed">
+                  <small>Latest rate</small>
+                  <strong id="latestRate">—</strong>
+                  <span id="latestDate">Loading...</span>
+                </div>
+                <div class="feed">
+                  <small>7-day model</small>
+                  <strong id="model7">Ready</strong>
+                  <span>Short-term pressure check.</span>
+                </div>
+                <div class="feed">
+                  <small>14-day model</small>
+                  <strong id="model14">Ready</strong>
+                  <span>Longer planning horizon.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="hero-aside">
+              <div class="aside-note">
+                <h4>What matters first</h4>
+                  <p>The page starts with the rate, the payment outlook, and a clear next step.</p>
+              </div>
+              <ul class="mini-list">
+                <li><span>Currency pair</span><strong>USD - RWF</strong></li>
+                <li><span>Decision horizon</span><strong>7 or 14 days</strong></li>
+                <li><span>Output focus</span><strong>Action, not jargon</strong></li>
+              </ul>
             </div>
           </div>
-        </div>
-        <div class="card" style="margin-top:18px;">
-          <h3 class="section-title">What FXGuard does</h3>
-          <div class="currency-card">
-            <div><h3>Simple payment outlook</h3><p>Looks at recent rate changes and patterns to show whether you may want a bigger safety cushion for the payment.</p></div>
-            <span class="risk-pill risk-Medium">Guidance</span>
-          </div>
-        </div>
-      </section>
 
-      <section class="screen" id="assessment">
-        <div class="grid two-col">
-          <div class="card">
-            <h3 class="section-title">New USD Payment Assessment</h3>
-            <div class="form">
-              <div><label>Currency</label><select id="currency"><option value="USD">USD payment</option></select></div>
-              <div><label>Payment amount</label><input id="amount" type="number" min="1" value="10000"></div>
-              <div><label>How far ahead?</label><div class="toggle"><button class="selected" data-horizon-main="7">7 days</button><button data-horizon-main="14">14 days</button></div></div>
-              <div><label>Extra amount to set aside (optional)</label><input id="margin" type="number" min="0" max="100" placeholder="e.g. 20"></div>
-              <button class="btn" id="analyzeBtn">Check payment outlook</button>
-            </div>
+          <div class="grid stats" style="margin-top:18px;">
+            <div class="card stat"><small>Currency pair</small><strong>USD - RWF</strong><span>Built for USD supplier payments and budget planning.</span></div>
+            <div class="card stat"><small>Latest rate</small><strong id="latestRateStat">—</strong><span id="latestDateStat">Loading...</span></div>
+            <div class="card stat"><small>Short-term view</small><strong id="model7Stat">Ready</strong><span>The 7-day model is loaded and available.</span></div>
+            <div class="card stat"><small>Planning view</small><strong id="model14Stat">Ready</strong><span>The 14-day model is loaded and available.</span></div>
           </div>
-          <div class="card">
-            <h3 class="section-title">How to use this screen</h3>
-            <p style="color:var(--muted); line-height:1.7; margin-top:0;">Enter a sample payment amount in USD, choose when it is due, and check whether the rate could move against you. For testing, use hypothetical amounts instead of confidential figures.</p>
-            <div class="recommendation">This is a planning tool, not financial advice or a guarantee.</div>
-          </div>
-        </div>
-      </section>
 
-      <section class="screen" id="results">
-        <div id="emptyResult" class="card"><h3>No result yet</h3><p style="color:var(--muted);">Run a risk assessment first.</p><button class="btn" onclick="showScreen('assessment')">Go to Assessment</button></div>
-        <div id="resultContent" class="hidden">
-          <div class="result-hero">
-            <div class="big-risk"><small>Risk Level</small><h3 id="riskLevel">—</h3><p id="riskMeaning">—</p></div>
-            <div class="big-risk"><small>Current Cost</small><h3 id="currentCost">—</h3><p id="currentRateText">—</p></div>
-            <div class="big-risk"><small>Possible Extra Cost</small><h3 id="extraCost">—</h3><p id="confidenceText">—</p></div>
-          </div>
-          <div class="card" style="margin-top:18px; background: var(--blue-soft); border-color: #bfdbfe;">
-            <h3 class="section-title">Recommendations</h3>
-            <p style="color:var(--muted); margin:-4px 0 12px; line-height:1.5;">These are the most useful next steps based on the current outlook.</p>
-            <div id="recommendations"></div>
-            <button class="btn" style="margin-top:16px;" onclick="showScreen('decision')">View full recommendations →</button>
-          </div>
           <div class="grid two-col" style="margin-top:18px;">
-            <div class="card"><h3 class="section-title">Why this result?</h3><p style="color:var(--muted); margin:-4px 0 12px; line-height:1.5;">These recent rate signals helped shape the result.</p><div id="drivers"></div></div>
-            <div class="card"><h3 class="section-title">How the outlook is split</h3><p style="color:var(--muted); margin:-4px 0 12px; line-height:1.5;">This shows how likely the tool thinks each outcome is.</p><canvas id="probChart" height="160"></canvas></div>
+            <div class="card">
+              <div class="section-label">Rate movement</div>
+              <h3 class="section-title">Recent USD - RWF trend</h3>
+              <p class="section-copy">A small rise in the chart means a future USD payment may cost more RWF. The chart is there to explain the current mood of the market, not to overwhelm the user with raw data.</p>
+              <canvas id="historyChart" height="130"></canvas>
+            </div>
+            <div class="card soft">
+              <div class="section-label">Quick action</div>
+              <h3 class="section-title">Check a payment in seconds</h3>
+              <p class="section-copy">Use a hypothetical invoice amount if you are testing. The point is to see whether the payment feels stable, watchful, or risky.</p>
+              <div class="form">
+                <div><label>Supplier invoice amount (USD)</label><input id="quickAmount" type="number" value="10000" min="1" /></div>
+                <div><label>Look ahead</label><div class="toggle"><button class="selected" data-horizon="7">7 days</button><button data-horizon="14">14 days</button></div></div>
+                <button class="btn full" id="quickAnalyze">Check payment outlook</button>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
 
-      <section class="screen" id="decision">
-        <div id="emptyDecision" class="card"><h3>No recommendations yet</h3><p style="color:var(--muted);">Run a payment outlook first to see helpful actions.</p></div>
-        <div id="decisionContent" class="hidden">
+          <div class="grid two-col" style="margin-top:18px;">
+            <div class="card">
+              <div class="section-label">Why this exists</div>
+              <h3 class="section-title">A simple question, answered clearly</h3>
+              <p class="section-copy">If a supplier payment is coming up, the app helps the user decide whether to stay on course, wait a bit, or budget more room.</p>
+              <div class="currency-card">
+                <div>
+                  <h3>Built for a real decision moment</h3>
+                  <p>The result is framed as practical guidance so it feels like a tool someone can use, not a report they have to interpret.</p>
+                </div>
+                <span class="risk-pill risk-Medium">Guidance</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="section-label">Trust and clarity</div>
+              <h3 class="section-title">What the result tells you</h3>
+              <p class="section-copy">The app exposes the key signals so the answer feels explainable, not magical.</p>
+              <div id="dashboardHints" class="mini-list">
+                <li><span>Risk level</span><strong>How exposed the payment looks</strong></li>
+                <li><span>Confidence</span><strong>How certain the model feels</strong></li>
+                <li><span>Recommendations</span><strong>What to do next</strong></li>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" id="assessment">
           <div class="grid two-col">
-            <div class="card"><h3 class="section-title">Recommendations</h3><div id="recommendations"></div></div>
-            <div class="card"><h3 class="section-title">Simple estimate</h3><table><tbody id="scenarioRows"></tbody></table><p class="disclaimer" id="disclaimer"></p></div>
+            <div class="card">
+              <div class="section-label">Assessment</div>
+              <h3 class="section-title">Check a payment before you commit</h3>
+              <p class="section-copy">Enter the amount and the timing, then see whether the payment looks calm, watchful, or exposed.</p>
+              <div class="form">
+                <div><label>Currency</label><select id="currency"><option value="USD">USD payment</option></select></div>
+                <div><label>Payment amount</label><input id="amount" type="number" min="1" value="10000"></div>
+                <div><label>How far ahead?</label><div class="toggle"><button class="selected" data-horizon-main="7">7 days</button><button data-horizon-main="14">14 days</button></div></div>
+                <div><label>Extra amount to set aside (optional)</label><input id="margin" type="number" min="0" max="100" placeholder="e.g. 20"></div>
+                <button class="btn" id="analyzeBtn">Check payment outlook</button>
+              </div>
+            </div>
+            <div class="card soft">
+              <div class="section-label">User guidance</div>
+              <h3 class="section-title">A few things to keep in mind</h3>
+              <p class="section-copy">Use a hypothetical amount during testing. The goal is to make the next decision easier, not to replace financial judgment.</p>
+              <div class="recommendation">If the payment is large or the due date is close, it may be worth keeping a little extra room in the budget.</div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="screen" id="feedback">
-        <div class="card">
-          <h3 class="section-title">Feedback form</h3>
-          <p style="color:var(--muted); line-height:1.6;">Use this for your 5–10 usability testing participants. Feedback is saved locally in the project reports folder.</p>
-          <div class="form" style="max-width:620px;">
-            <div><label>Participant ID (optional)</label><input id="participantId" placeholder="e.g. P01"></div>
-            <div><label>How clear was it? (1–5)</label><input id="clarity" type="number" min="1" max="5" value="5"></div>
-            <div><label>How useful was it? (1–5)</label><input id="usefulness" type="number" min="1" max="5" value="5"></div>
-            <div><label>Comments</label><textarea id="comment" rows="4" placeholder="What was helpful or confusing?"></textarea></div>
-            <button class="btn" id="saveFeedback">Save feedback</button>
+        <section class="screen" id="results">
+          <div id="emptyResult" class="card">
+            <div class="section-label">No result yet</div>
+            <h3 class="section-title">Run a payment check first</h3>
+            <p class="section-copy">The result view is where the app translates the model output into an action a person can actually use.</p>
+            <button class="btn" onclick="showScreen('assessment')">Go to assessment</button>
           </div>
-        </div>
-      </section>
+
+          <div id="resultContent" class="hidden">
+            <div class="result-hero">
+              <div class="big-risk"><small>Risk level</small><h3 id="riskLevel">—</h3><p id="riskMeaning">—</p></div>
+              <div class="big-risk"><small>Current cost</small><h3 id="currentCost">—</h3><p id="currentRateText">—</p></div>
+              <div class="big-risk"><small>Possible extra cost</small><h3 id="extraCost">—</h3><p id="confidenceText">—</p></div>
+            </div>
+
+            <div class="grid two-col" style="margin-top:18px;">
+              <div class="card soft">
+                <div class="section-label">Next steps</div>
+                <h3 class="section-title">Recommendations in plain language</h3>
+                <p class="section-copy">These are meant to be the most useful actions for someone handling the payment, not a list of model features.</p>
+                <div id="recommendations"></div>
+                <button class="btn" style="margin-top:14px;" onclick="showScreen('decision')">View action plan</button>
+              </div>
+              <div class="card">
+                <div class="section-label">Why this result</div>
+                <h3 class="section-title">What influenced the outcome</h3>
+                <p class="section-copy">The app exposes the key signals so the answer feels explainable, not magical.</p>
+                <div id="drivers"></div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:18px;">
+              <div class="section-label">Model shape</div>
+              <h3 class="section-title">How the outlook is split</h3>
+              <p class="section-copy">This chart shows the model's distribution across Low, Medium, and High risk. It is useful for understanding whether the answer was decisive or borderline.</p>
+              <canvas id="probChart" height="150"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" id="decision">
+          <div id="emptyDecision" class="card">
+            <div class="section-label">Action plan</div>
+            <h3 class="section-title">No recommendations yet</h3>
+            <p class="section-copy">Run a payment outlook first and this section will turn the result into a simple plan.</p>
+          </div>
+
+          <div id="decisionContent" class="hidden">
+            <div class="grid two-col">
+              <div class="card">
+                <div class="section-label">Recommended actions</div>
+                <h3 class="section-title">What to do next</h3>
+                <div id="recommendations"></div>
+              </div>
+              <div class="card soft">
+                <div class="section-label">Simple estimate</div>
+                <h3 class="section-title">Scenario summary</h3>
+                <table>
+                  <tbody id="scenarioRows"></tbody>
+                </table>
+                <p class="disclaimer" id="disclaimer"></p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" id="feedback">
+          <div class="card">
+            <div class="section-label">Feedback</div>
+            <h3 class="section-title">Participant feedback form</h3>
+            <p class="section-copy">Your honest feedback means a lot on how we improve this product. Your responses will be saved in an Excel file for review.</p>
+            <div class="form" style="max-width:640px;">
+              <div><label>How clear was it? (1–5)</label><input id="clarity" type="number" min="1" max="5" value="5"></div>
+              <div><label>How useful was it? (1–5)</label><input id="usefulness" type="number" min="1" max="5" value="5"></div>
+              <div><label>Comments</label><textarea id="comment" rows="4" placeholder="What was helpful or confusing?"></textarea></div>
+              <div><label>Participant name (optional)</label><input id="participantName" placeholder="e.g. Aline" /></div>
+              <div><label>Import category (optional)</label><input id="importCategory" placeholder="e.g. Raw materials" /></div>
+              <div><label>Phone number (optional)</label><input id="phoneNumber" placeholder="e.g. +250 7XX XXX XXX" /></div>
+              <button class="btn" id="saveFeedback">Save feedback</button>
+            </div>
+          </div>
+        </section>
+      </div>
     </main>
   </div>
 
@@ -233,36 +844,79 @@
     let probChart = null;
 
     const titles = {
-      dashboard: ['Dashboard', 'A quick view of the latest USD/RWF rate and what it may mean for your payment. See whether your USD payment may become more expensive soon, using recent Rwanda rate data.'],
-      assessment: ['New Payment Check', 'Enter a payment amount and how soon it is due.'],
-      results: ['Payment Outlook', 'See the likely outcome, confidence, and possible added cost.'],
-      decision: ['Recommendations', 'Turn the outlook into simple next steps.'],
-      feedback: ['User Feedback', 'Collect usability testing feedback for your evaluation.']
+      dashboard: [
+        'Dashboard',
+        'A calm overview of the latest rate, the recent trend, and the fastest path to a payment decision.'
+      ],
+      assessment: [
+        'Payment check',
+        'Enter a payment amount and choose how far ahead you want to look.'
+      ],
+      results: [
+        'Decision view',
+        'See the outcome, why it happened, and what it means for the payment.'
+      ],
+      decision: [
+        'Action plan',
+        'Turn the model result into a concrete next step.'
+      ],
+      feedback: [
+        'Participant feedback',
+        'Collecting usability feedback from test participants.'
+      ]
     };
 
     document.querySelectorAll('.nav button').forEach(btn => btn.addEventListener('click', () => showScreen(btn.dataset.screen)));
-    document.querySelectorAll('[data-horizon]').forEach(btn => btn.addEventListener('click', () => { selectedHorizon = Number(btn.dataset.horizon); document.querySelectorAll('[data-horizon]').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); }));
-    document.querySelectorAll('[data-horizon-main]').forEach(btn => btn.addEventListener('click', () => { selectedMainHorizon = Number(btn.dataset.horizonMain); document.querySelectorAll('[data-horizon-main]').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); }));
+    document.querySelectorAll('[data-horizon]').forEach(btn => btn.addEventListener('click', () => {
+      selectedHorizon = Number(btn.dataset.horizon);
+      document.querySelectorAll('[data-horizon]').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    }));
+    document.querySelectorAll('[data-horizon-main]').forEach(btn => btn.addEventListener('click', () => {
+      selectedMainHorizon = Number(btn.dataset.horizonMain);
+      document.querySelectorAll('[data-horizon-main]').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    }));
+
+    document.getElementById('heroCheckBtn').addEventListener('click', () => showScreen('assessment'));
 
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
+      const screen = document.getElementById(id);
+      if (screen) screen.classList.add('active');
       document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('active', b.dataset.screen === id));
       document.getElementById('pageTitle').textContent = titles[id][0];
       document.getElementById('pageSubtitle').textContent = titles[id][1];
+      document.getElementById('pageSubtitleEmphasis').style.display = id === 'dashboard' ? 'block' : 'none';
     }
-    function fmt(num) { return new Intl.NumberFormat('en-RW', { maximumFractionDigits: 0 }).format(num); }
-    function fmtRate(num) { return new Intl.NumberFormat('en-RW', { maximumFractionDigits: 3 }).format(num); }
-    function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3200); }
+
+    function fmt(num) {
+      return new Intl.NumberFormat('en-RW', { maximumFractionDigits: 0 }).format(num);
+    }
+    function fmtRate(num) {
+      return new Intl.NumberFormat('en-RW', { maximumFractionDigits: 3 }).format(num);
+    }
+    function toast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(() => t.style.display = 'none', 3200);
+    }
 
     async function init() {
       const latest = await fetch(`${API}/api/latest-rate`).then(r => r.json());
       document.getElementById('latestRate').textContent = fmtRate(latest.mid_rate);
       document.getElementById('latestDate').textContent = `Latest update: ${latest.date}`;
-      document.getElementById('dataBadge').textContent = `Recent data • ${latest.date}`;
+      document.getElementById('latestRateStat').textContent = fmtRate(latest.mid_rate);
+      document.getElementById('latestDateStat').textContent = `Latest update: ${latest.date}`;
+      document.getElementById('dataBadge').textContent = `Recent rate data • ${latest.date}`;
+
       const metadata = await fetch(`${API}/api/model-metadata`).then(r => r.json());
-      document.getElementById('model7').textContent = 'Ready';
-      document.getElementById('model14').textContent = 'Ready';
+      document.getElementById('model7').textContent = metadata?.models?.['7d']?.best_model ? 'Ready' : 'Loaded';
+      document.getElementById('model14').textContent = metadata?.models?.['14d']?.best_model ? 'Ready' : 'Loaded';
+      document.getElementById('model7Stat').textContent = metadata?.models?.['7d']?.best_model ? 'Ready' : 'Loaded';
+      document.getElementById('model14Stat').textContent = metadata?.models?.['14d']?.best_model ? 'Ready' : 'Loaded';
+
       await drawHistory();
     }
 
@@ -270,12 +924,49 @@
       const data = await fetch(`${API}/api/history?days=180`).then(r => r.json());
       const ctx = document.getElementById('historyChart');
       if (historyChart) historyChart.destroy();
-      historyChart = new Chart(ctx, { type: 'line', data: { labels: data.points.map(p => p.date), datasets: [{ label: 'USD/RWF', data: data.points.map(p => p.mid_rate), tension: .25, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,.08)', fill: true, pointRadius: 0, borderWidth: 2 }] }, options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { maxTicksLimit: 8 }, grid: { display: false } }, y: { grid: { color: '#e5e7eb' } } } } });
+      historyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.points.map(p => p.date),
+          datasets: [{
+            label: 'USD - RWF',
+            data: data.points.map(p => p.mid_rate),
+            tension: .28,
+            borderColor: '#2457d6',
+            backgroundColor: 'rgba(36,87,214,.10)',
+            fill: true,
+            pointRadius: 0,
+            borderWidth: 2.5
+          }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { maxTicksLimit: 8, color: '#728196' }, grid: { display: false } },
+            y: { ticks: { color: '#728196' }, grid: { color: 'rgba(20,32,51,0.08)' } }
+          }
+        }
+      });
     }
 
     async function runAssessment(amount, horizon) {
-      const res = await fetch(`${API}/api/predict-risk`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ currency: 'USD', amount: Number(amount), horizon: Number(horizon), margin_percent: Number(document.getElementById('margin')?.value || 0) || null }) });
-      if (!res.ok) { toast('Failed to analyze risk. Check backend logs.'); return; }
+      const res = await fetch(`${API}/api/predict-risk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currency: 'USD',
+          amount: Number(amount),
+          horizon: Number(horizon),
+          margin_percent: Number(document.getElementById('margin')?.value || 0) || null
+        })
+      });
+
+      if (!res.ok) {
+        toast('Failed to analyze risk. Check backend logs.');
+        return;
+      }
+
       latestResult = await res.json();
       renderResult(latestResult);
       showScreen('results');
@@ -286,15 +977,17 @@
       document.getElementById('resultContent').classList.remove('hidden');
       document.getElementById('emptyDecision').classList.add('hidden');
       document.getElementById('decisionContent').classList.remove('hidden');
+
       const riskEl = document.getElementById('riskLevel');
       riskEl.textContent = r.risk_level;
       riskEl.style.color = r.risk_level === 'High' ? 'var(--red)' : r.risk_level === 'Medium' ? 'var(--amber)' : 'var(--green)';
-      document.getElementById('riskMeaning').textContent = `What this may mean for your payment in the next ${r.horizon_days} days.`;
+      document.getElementById('riskMeaning').textContent = `For the next ${r.horizon_days} days, this looks like a ${r.risk_level.toLowerCase()}-pressure payment outlook.`;
       document.getElementById('currentCost').textContent = `RWF ${fmt(r.current_cost_rwf)}`;
       document.getElementById('currentRateText').textContent = `Current rate: ${fmtRate(r.current_rate)} RWF for 1 USD`;
       document.getElementById('extraCost').textContent = `RWF ${fmt(r.possible_extra_cost_rwf)}`;
+
       const confidenceScore = r.confidence_score ?? r.confidence ?? 0;
-      const drivers = r.key_drivers;
+      const drivers = r.key_drivers || {};
       const driverLabels = {
         daily_return: 'Latest day-to-day change',
         return_7d: 'Change over the last 7 days',
@@ -307,7 +1000,10 @@
         spread_pct: 'Rate spread as a percentage',
         depreciation_days_7d: 'Recent weaker days'
       };
-      document.getElementById('drivers').innerHTML = Object.entries(drivers).map(([k, v]) => `<div class="driver"><span>${driverLabels[k] || k.replaceAll('_', ' ')}</span><strong>${v}</strong></div>`).join('');
+      document.getElementById('drivers').innerHTML = Object.entries(drivers)
+        .map(([k, v]) => `<div class="driver"><span>${driverLabels[k] || k.replaceAll('_', ' ')}</span><strong>${v}</strong></div>`)
+        .join('');
+
       const probs = r.class_probabilities || {};
       const probabilitySummary = Object.entries(probs)
         .sort((a, b) => b[1] - a[1])
@@ -315,9 +1011,25 @@
         .join(' · ');
       const topLabel = r.top_probability_label || r.risk_level;
       const topProbability = r.predicted_probability ?? confidenceScore;
-      document.getElementById('confidenceText').textContent = `Confidence score: ${Math.round(confidenceScore * 100)}% • ${topLabel} probability: ${Math.round(topProbability * 100)}%${probabilitySummary ? ` • ${probabilitySummary}` : ''}`;
+      document.getElementById('confidenceText').textContent = `Confidence: ${Math.round(confidenceScore * 100)}% • Top class: ${topLabel} at ${Math.round(topProbability * 100)}%${probabilitySummary ? ` • ${probabilitySummary}` : ''}`;
+
       if (probChart) probChart.destroy();
-      probChart = new Chart(document.getElementById('probChart'), { type: 'bar', data: { labels: Object.keys(probs), datasets: [{ data: Object.values(probs).map(p => p * 100), backgroundColor: ['#059669', '#d97706', '#dc2626'] }] }, options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } } } });
+      probChart = new Chart(document.getElementById('probChart'), {
+        type: 'bar',
+        data: {
+          labels: Object.keys(probs),
+          datasets: [{
+            data: Object.values(probs).map(p => p * 100),
+            backgroundColor: ['#0f8b6c', '#ad6a10', '#c43c3c']
+          }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } }
+        }
+      });
+
       document.getElementById('recommendations').innerHTML = r.recommendations.map(x => `<div class="recommendation">${x}</div>`).join('');
       document.getElementById('scenarioRows').innerHTML = `
         <tr><td>Payment amount</td><td><strong>${fmt(r.amount_usd)} USD</strong></td></tr>
@@ -331,11 +1043,26 @@
     document.getElementById('quickAnalyze').addEventListener('click', () => runAssessment(document.getElementById('quickAmount').value, selectedHorizon));
     document.getElementById('analyzeBtn').addEventListener('click', () => runAssessment(document.getElementById('amount').value, selectedMainHorizon));
     document.getElementById('saveFeedback').addEventListener('click', async () => {
-      const body = { participant_id: document.getElementById('participantId').value || null, clarity_rating: Number(document.getElementById('clarity').value), usefulness_rating: Number(document.getElementById('usefulness').value), comment: document.getElementById('comment').value || null };
-      const res = await fetch(`${API}/api/feedback`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const body = {
+        participant_name: document.getElementById('participantName').value || null,
+        import_category: document.getElementById('importCategory').value || null,
+        phone_number: document.getElementById('phoneNumber').value || null,
+        clarity_rating: Number(document.getElementById('clarity').value),
+        usefulness_rating: Number(document.getElementById('usefulness').value),
+        comment: document.getElementById('comment').value || null
+      };
+      const res = await fetch(`${API}/api/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
       toast(res.ok ? 'Feedback saved.' : 'Feedback could not be saved.');
     });
-    init().catch(err => { console.error(err); toast('Could not load data. Is the backend running?'); });
+
+    init().catch(err => {
+      console.error(err);
+      toast('Could not load data. Is the backend running?');
+    });
   </script>
 </body>
 </html>

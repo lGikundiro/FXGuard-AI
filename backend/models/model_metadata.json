@@ -142,6 +142,55 @@
               "support": 285.0
             }
           }
+        },
+        "xgboost": {
+          "accuracy": 1.0,
+          "precision_macro": 1.0,
+          "recall_macro": 1.0,
+          "f1_macro": 1.0,
+          "confusion_matrix_labels": [
+            "Low",
+            "Medium",
+            "High"
+          ],
+          "confusion_matrix": [
+            [
+              285,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          "classification_report": {
+            "Low": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 285.0
+            },
+            "accuracy": 1.0,
+            "macro avg": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 285.0
+            },
+            "weighted avg": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 285.0
+            }
+          }
         }
       }
     },
@@ -238,6 +287,55 @@
           }
         },
         "random_forest": {
+          "accuracy": 1.0,
+          "precision_macro": 1.0,
+          "recall_macro": 1.0,
+          "f1_macro": 1.0,
+          "confusion_matrix_labels": [
+            "Low",
+            "Medium",
+            "High"
+          ],
+          "confusion_matrix": [
+            [
+              284,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          "classification_report": {
+            "Low": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 284.0
+            },
+            "accuracy": 1.0,
+            "macro avg": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 284.0
+            },
+            "weighted avg": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 284.0
+            }
+          }
+        },
+        "xgboost": {
           "accuracy": 1.0,
           "precision_macro": 1.0,
           "recall_macro": 1.0,

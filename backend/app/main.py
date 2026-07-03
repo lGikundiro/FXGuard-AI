@@ -49,7 +49,9 @@ class RiskRequest(BaseModel):
 
 
 class FeedbackRequest(BaseModel):
-    participant_id: Optional[str] = None
+    participant_name: Optional[str] = None
+    import_category: Optional[str] = None
+    phone_number: Optional[str] = None
     clarity_rating: int = Field(ge=1, le=5)
     usefulness_rating: int = Field(ge=1, le=5)
     comment: Optional[str] = None
@@ -265,10 +267,14 @@ def predict_risk(req: RiskRequest):
 def feedback(req: FeedbackRequest):
     feedback_dir = ROOT / "reports" / "feedback"
     feedback_dir.mkdir(parents=True, exist_ok=True)
-    path = feedback_dir / "prototype_feedback.csv"
+    path = feedback_dir / "prototype_feedback.xlsx"
     row = pd.DataFrame([req.model_dump()])
+
     if path.exists():
-        row.to_csv(path, mode="a", header=False, index=False)
+        existing = pd.read_excel(path)
+        combined = pd.concat([existing, row], ignore_index=True)
     else:
-        row.to_csv(path, index=False)
+        combined = row
+
+    combined.to_excel(path, index=False)
     return {"status": "saved", "message": "Thank you for your feedback."}

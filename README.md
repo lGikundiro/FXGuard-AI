@@ -1,8 +1,8 @@
-# FXGuard AI — USD/RWF Exchange Rate Risk Forecasting MVP
+# FXGuard AI — USD-RWF Exchange Rate Risk Forecasting MVP
 
 FXGuard AI is a full-stack web application integrated with machine learning models for classifying short-term USD/RWF depreciation risk for Rwanda-based importers.
 
-The MVP focuses on **USD/RWF only** using a prepared 4-year BNR dataset. The architecture is designed so that EUR, GBP, KES, UGX, CNY, and other currencies can be added later using the same data-preparation pipeline.
+The MVP focuses on **USD-RWF only** using a prepared 4-year BNR dataset. The architecture is designed so that EUR, GBP, KES, UGX, CNY, and other currencies can be added later using the same data-preparation pipeline.
 
 ## What the project includes
 
@@ -10,11 +10,10 @@ The MVP focuses on **USD/RWF only** using a prepared 4-year BNR dataset. The arc
 - Feature-engineered datasets for 7-day and 14-day risk labels
 - Trained ML models for 7-day and 14-day risk classification
 - FastAPI backend
-- White web interface frontend
+- Web interface frontend
 - Decision-support output for importers
 - Feedback form for usability testing
 - Training script to retrain the models
-- VS Code launch configuration
 
 ## Project structure
 
@@ -182,7 +181,7 @@ For research evaluation, the app includes a feedback form. Feedback is saved loc
 reports/feedback/prototype_feedback.csv
 ```
 
-Participants should use hypothetical supplier amounts during testing unless they voluntarily choose otherwise. Do not collect bank details, supplier contracts, real financial statements, or confidential business records.
+Participants should use hypothetical supplier amounts during testing unless they voluntarily choose otherwise. The project do not collect bank details, supplier contracts, real financial statements, or confidential business records.
 
 
 ## Notebooks

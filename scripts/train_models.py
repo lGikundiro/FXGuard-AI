@@ -45,6 +45,8 @@ FEATURE_COLUMNS: List[str] = [
 ]
 
 CLASS_ORDER = ["Low", "Medium", "High"]
+CLASS_TO_INT = {label: idx for idx, label in enumerate(CLASS_ORDER)}
+INT_TO_CLASS = {idx: label for label, idx in CLASS_TO_INT.items()}
 
 
 def load_dataset(horizon: int) -> pd.DataFrame:
@@ -85,6 +87,7 @@ def train_for_horizon(horizon: int) -> Dict:
     y_train = train_df[label_col]
     X_test = test_df[FEATURE_COLUMNS]
     y_test = test_df[label_col]
+    y_train_xgb = y_train.map(CLASS_TO_INT)
 
     models = {
         "logistic_regression": Pipeline([
@@ -120,8 +123,13 @@ def train_for_horizon(horizon: int) -> Dict:
     best_f1 = -1.0
 
     for name, model in models.items():
-        model.fit(X_train, y_train)
-        preds = model.predict(X_test)
+        if name == "xgboost":
+            model.fit(X_train, y_train_xgb)
+            preds = model.predict(X_test)
+            preds = pd.Series(preds).map(INT_TO_CLASS).to_numpy()
+        else:
+            model.fit(X_train, y_train)
+            preds = model.predict(X_test)
         metrics = evaluate(y_test, preds)
         results[name] = metrics
         if metrics["f1_macro"] > best_f1:
