@@ -1,0 +1,292 @@
+{
+  "project": "FXGuard AI",
+  "currency_pair": "USD/RWF",
+  "models": {
+    "7d": {
+      "horizon_days": 7,
+      "label_column": "risk_label_7d",
+      "feature_columns": [
+        "mid_rate",
+        "daily_return",
+        "return_7d",
+        "return_14d",
+        "ma_7",
+        "ma_14",
+        "ma_30",
+        "ma_gap",
+        "volatility_7d",
+        "volatility_14d",
+        "volatility_30d",
+        "momentum_7d",
+        "momentum_14d",
+        "spread",
+        "spread_pct",
+        "depreciation_days_7d",
+        "depreciation_days_14d"
+      ],
+      "class_order": [
+        "Low",
+        "Medium",
+        "High"
+      ],
+      "best_model": "logistic_regression",
+      "model_path": "backend\\models\\risk_model_7d.pkl",
+      "training_rows": 1139,
+      "testing_rows": 285,
+      "date_range": {
+        "start": "2022-07-26",
+        "end": "2026-06-18",
+        "train_end": "2025-09-06",
+        "test_start": "2025-09-07"
+      },
+      "latest_rate": {
+        "date": "2026-06-18",
+        "currency": "USD",
+        "mid_rate": 1464.985
+      },
+      "metrics": {
+        "logistic_regression": {
+          "accuracy": 1.0,
+          "precision_macro": 1.0,
+          "recall_macro": 1.0,
+          "f1_macro": 1.0,
+          "confusion_matrix_labels": [
+            "Low",
+            "Medium",
+            "High"
+          ],
+          "confusion_matrix": [
+            [
+              285,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          "classification_report": {
+            "Low": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 285.0
+            },
+            "accuracy": 1.0,
+            "macro avg": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 285.0
+            },
+            "weighted avg": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 285.0
+            }
+          }
+        },
+        "random_forest": {
+          "accuracy": 1.0,
+          "precision_macro": 1.0,
+          "recall_macro": 1.0,
+          "f1_macro": 1.0,
+          "confusion_matrix_labels": [
+            "Low",
+            "Medium",
+            "High"
+          ],
+          "confusion_matrix": [
+            [
+              285,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          "classification_report": {
+            "Low": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 285.0
+            },
+            "accuracy": 1.0,
+            "macro avg": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 285.0
+            },
+            "weighted avg": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 285.0
+            }
+          }
+        }
+      }
+    },
+    "14d": {
+      "horizon_days": 14,
+      "label_column": "risk_label_14d",
+      "feature_columns": [
+        "mid_rate",
+        "daily_return",
+        "return_7d",
+        "return_14d",
+        "ma_7",
+        "ma_14",
+        "ma_30",
+        "ma_gap",
+        "volatility_7d",
+        "volatility_14d",
+        "volatility_30d",
+        "momentum_7d",
+        "momentum_14d",
+        "spread",
+        "spread_pct",
+        "depreciation_days_7d",
+        "depreciation_days_14d"
+      ],
+      "class_order": [
+        "Low",
+        "Medium",
+        "High"
+      ],
+      "best_model": "logistic_regression",
+      "model_path": "backend\\models\\risk_model_14d.pkl",
+      "training_rows": 1133,
+      "testing_rows": 284,
+      "date_range": {
+        "start": "2022-07-26",
+        "end": "2026-06-11",
+        "train_end": "2025-08-31",
+        "test_start": "2025-09-01"
+      },
+      "latest_rate": {
+        "date": "2026-06-11",
+        "currency": "USD",
+        "mid_rate": 1464.545
+      },
+      "metrics": {
+        "logistic_regression": {
+          "accuracy": 1.0,
+          "precision_macro": 1.0,
+          "recall_macro": 1.0,
+          "f1_macro": 1.0,
+          "confusion_matrix_labels": [
+            "Low",
+            "Medium",
+            "High"
+          ],
+          "confusion_matrix": [
+            [
+              284,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          "classification_report": {
+            "Low": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 284.0
+            },
+            "accuracy": 1.0,
+            "macro avg": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 284.0
+            },
+            "weighted avg": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 284.0
+            }
+          }
+        },
+        "random_forest": {
+          "accuracy": 1.0,
+          "precision_macro": 1.0,
+          "recall_macro": 1.0,
+          "f1_macro": 1.0,
+          "confusion_matrix_labels": [
+            "Low",
+            "Medium",
+            "High"
+          ],
+          "confusion_matrix": [
+            [
+              284,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          "classification_report": {
+            "Low": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 284.0
+            },
+            "accuracy": 1.0,
+            "macro avg": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 284.0
+            },
+            "weighted avg": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1-score": 1.0,
+              "support": 284.0
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run FXGuard API",
+      "type": "python",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["backend.app.main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Train FXGuard Models",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/train_models.py",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}

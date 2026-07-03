@@ -1,0 +1,29 @@
+{
+  "source_file": "currency_table.xlsx",
+  "raw_records": 1096,
+  "raw_date_range": "2022-01-04 to 2026-06-25",
+  "prepared_4year_period": "2022-06-26 to 2026-06-25",
+  "currencies": [
+    "USD"
+  ],
+  "official_observations_4year": 978,
+  "daily_calendar_rows": 1461,
+  "model_ready_7d_rows": 1425,
+  "model_ready_14d_rows": 1418,
+  "thresholds": {
+    "7d_low_medium_boundary": 0.0015660065,
+    "7d_medium_high_boundary": 0.0026750329,
+    "14d_low_medium_boundary": 0.0031488225,
+    "14d_medium_high_boundary": 0.005390612
+  },
+  "label_counts_7d": {
+    "Low": 698,
+    "Medium": 436,
+    "High": 291
+  },
+  "label_counts_14d": {
+    "Low": 695,
+    "Medium": 433,
+    "High": 290
+  }
+}
