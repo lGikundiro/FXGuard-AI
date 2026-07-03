@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import json
+import os
+import urllib.error
+import urllib.request
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
@@ -16,6 +20,10 @@ ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data" / "processed"
 MODEL_DIR = ROOT / "backend" / "models"
 FRONTEND_DIR = ROOT / "frontend"
+FEEDBACK_DIR = ROOT / "reports" / "feedback"
+FEEDBACK_FILE = FEEDBACK_DIR / "prototype_feedback.xlsx"
+FEEDBACK_FORM_NAME = os.getenv("FEEDBACK_FORM_NAME", "FXGuard AI User feedback")
+GOOGLE_SHEETS_WEBHOOK_URL = os.getenv("GOOGLE_SHEETS_WEBHOOK_URL", "").strip()
 
 FEATURE_COLUMNS = [
     "mid_rate", "daily_return", "return_7d", "return_14d", "ma_7", "ma_14", "ma_30",
@@ -57,6 +65,17 @@ class FeedbackRequest(BaseModel):
     comment: Optional[str] = None
 
 
+FEEDBACK_COLUMNS = [
+    "submitted_at",
+    "participant_name",
+    "import_category",
+    "phone_number",
+    "clarity_rating",
+    "usefulness_rating",
+    "comment",
+]
+
+
 _cache = {}
 
 
@@ -64,6 +83,42 @@ def load_json(path: Path):
     if not path.exists():
         return {}
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def project_path_label(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
+def append_feedback_to_google_sheet(feedback_data: dict) -> dict:
+    if not GOOGLE_SHEETS_WEBHOOK_URL:
+        return {"enabled": False, "status": "not_configured"}
+
+    payload = {
+        "form_name": FEEDBACK_FORM_NAME,
+        "columns": FEEDBACK_COLUMNS,
+        "response": {column: feedback_data.get(column) for column in FEEDBACK_COLUMNS},
+    }
+    data = json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(
+        GOOGLE_SHEETS_WEBHOOK_URL,
+        data=data,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=8) as response:
+            response_text = response.read().decode("utf-8").strip()
+            response_body = json.loads(response_text) if response_text else {}
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        return {"enabled": True, "status": "failed", "detail": str(exc)}
+
+    if isinstance(response_body, dict) and response_body.get("status") in {"saved", "ok"}:
+        return {"enabled": True, "status": "saved"}
+    return {"enabled": True, "status": "unknown_response"}
 
 
 def load_model(horizon: int):
@@ -196,6 +251,35 @@ def latest_rate():
     }
 
 
+@app.get("/api/data-freshness")
+def data_freshness():
+    daily = load_daily_calendar()
+    features = load_features()
+    latest_rate_date = daily["date"].max().date()
+    latest_feature_date = features["date"].max().date()
+    today = datetime.now().date()
+    days_since_rate = max((today - latest_rate_date).days, 0)
+    days_since_features = max((today - latest_feature_date).days, 0)
+
+    if days_since_rate <= 2:
+        status = "fresh"
+    elif days_since_rate <= 14:
+        status = "aging"
+    else:
+        status = "stale"
+
+    return {
+        "status": status,
+        "today": str(today),
+        "latest_rate_date": str(latest_rate_date),
+        "latest_feature_date": str(latest_feature_date),
+        "days_since_latest_rate": days_since_rate,
+        "days_since_latest_features": days_since_features,
+        "source": "Local prepared BNR dataset",
+        "note": "Refresh the processed datasets and retrain models when new official rates are available.",
+    }
+
+
 @app.get("/api/history")
 def history(days: int = 90):
     df = load_daily_calendar().tail(max(7, min(days, 1461)))
@@ -265,16 +349,34 @@ def predict_risk(req: RiskRequest):
 
 @app.post("/api/feedback")
 def feedback(req: FeedbackRequest):
-    feedback_dir = ROOT / "reports" / "feedback"
-    feedback_dir.mkdir(parents=True, exist_ok=True)
-    path = feedback_dir / "prototype_feedback.xlsx"
-    row = pd.DataFrame([req.model_dump()])
+    FEEDBACK_DIR.mkdir(parents=True, exist_ok=True)
+    feedback_data = req.model_dump()
+    feedback_data["submitted_at"] = datetime.now().isoformat(timespec="seconds")
+    row = pd.DataFrame([feedback_data], columns=FEEDBACK_COLUMNS)
 
-    if path.exists():
-        existing = pd.read_excel(path)
+    if FEEDBACK_FILE.exists():
+        existing = pd.read_excel(FEEDBACK_FILE, dtype={"phone_number": str})
         combined = pd.concat([existing, row], ignore_index=True)
     else:
         combined = row
 
-    combined.to_excel(path, index=False)
-    return {"status": "saved", "message": "Thank you for your feedback."}
+    combined = combined.reindex(columns=FEEDBACK_COLUMNS)
+    combined.to_excel(FEEDBACK_FILE, index=False)
+    google_sheet_result = append_feedback_to_google_sheet(feedback_data)
+    return {
+        "status": "saved",
+        "message": "Thank you for your feedback.",
+        "file": project_path_label(FEEDBACK_FILE),
+        "google_sheet": google_sheet_result,
+    }
+
+
+@app.get("/api/feedback-file")
+def download_feedback_file():
+    if not FEEDBACK_FILE.exists():
+        raise HTTPException(status_code=404, detail="No feedback responses have been saved yet.")
+    return FileResponse(
+        FEEDBACK_FILE,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=FEEDBACK_FILE.name,
+    )

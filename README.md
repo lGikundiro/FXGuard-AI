@@ -26,9 +26,12 @@ FXGuard_AI_Project/
     raw/currency_table.xlsx      # original uploaded BNR Excel export
     processed/                   # clean, feature, and model-ready datasets
     data_dictionary.csv
-  frontend/index.html            # white web UI
+  frontend/index.html            # web UI markup
+  frontend/styles.css            # frontend styling
+  frontend/app.js                # frontend behavior and API calls
   scripts/train_models.py        # retrain ML models
   reports/                       # dataset summaries and user feedback output
+  render.yaml                    # Render deployment blueprint
   requirements.txt
   run_backend.py
   run_windows.bat
@@ -97,6 +100,28 @@ API docs are available at:
 http://127.0.0.1:8000/docs
 ```
 
+## Deploy on Render
+
+This project is configured for Render with `render.yaml`.
+
+1. Push the project to GitHub.
+2. In Render, choose **New > Blueprint** or **New > Web Service**.
+3. Connect the GitHub repository.
+4. If using the dashboard manually, use:
+
+```text
+Build Command:
+pip install -r requirements.txt
+
+Start Command:
+uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+
+Health Check Path:
+/health
+```
+
+The deployment uses Python `3.12.10` from `.python-version`. The app serves both the FastAPI backend and the frontend from one Render Web Service.
+
 ## Model details
 
 The current MVP trains two models:
@@ -147,15 +172,29 @@ backend/models/model_metadata.json
 
 The saved model files will contain the best-performing classifier for each horizon after the comparison run.
 
+The training script also regenerates:
+
+```text
+reports/model_evaluation.md
+```
+
+This report records the chronological train/test windows, class distributions, majority-class baseline, rolling-origin backtest folds, probability-quality metrics, and any warnings about class imbalance in the validation windows.
+
+Current model-validation caveat: the most recent chronological test windows contain only the `Low` risk class, so perfect-looking accuracy should be interpreted carefully. The rolling-origin backtest in `reports/model_evaluation.md` gives a more honest view of performance across earlier windows where more classes appear.
+
+If `xgboost` is not installed in the active Python environment, the training script skips XGBoost and records that in the model metadata/report instead of failing.
+
 ## Main API endpoints
 
 ```text
 GET  /health
 GET  /api/latest-rate
+GET  /api/data-freshness
 GET  /api/history?days=180
 GET  /api/model-metadata
 POST /api/predict-risk
 POST /api/feedback
+GET  /api/feedback-file
 ```
 
 Example prediction request:
@@ -175,13 +214,31 @@ The system provides **decision support only**. It is not guaranteed financial ad
 
 ## User testing
 
-For research evaluation, the app includes a feedback form. Feedback is saved locally at:
+For research evaluation, the app embeds the Google Form named `FXGuard AI User feedback` in the **Participant feedback** page.
+
+Form link:
 
 ```text
-reports/feedback/prototype_feedback.csv
+https://docs.google.com/forms/d/e/1FAIpQLSd3E97VFGFl7v-9ojSAAmPc4RkE-30tf9YCJ_XUhPuw8JFbBg/viewform
 ```
 
-Participants should use hypothetical supplier amounts during testing unless they voluntarily choose otherwise. The project do not collect bank details, supplier contracts, real financial statements, or confidential business records.
+Users submit feedback through the embedded Google Form. Responses are saved directly in the Google Forms response spreadsheet connected to that form. If the embedded form does not load in a browser, users can click **Open form in new tab** on the feedback page.
+
+The backend still includes the local feedback API and Excel download endpoint as a backup:
+
+```text
+POST /api/feedback
+GET  /api/feedback-file
+```
+
+Participants should use hypothetical supplier amounts during testing unless they voluntarily choose otherwise. The project does not collect bank details, supplier contracts, real financial statements, or confidential business records.
+
+
+## Improvement roadmap
+
+The current app uses local prepared BNR datasets. The `/api/data-freshness` endpoint reports how many days old the latest local rate and feature rows are. A future production version should automatically fetch new official BNR exchange-rate data, rebuild processed datasets, retrain or validate the models, and publish a fresh evaluation report.
+
+The frontend is still a single-file MVP, but the most immediate bugs have been cleaned: duplicate recommendation container IDs were removed, the obsolete hidden feedback controls were removed, and the visible feedback flow now uses the embedded Google Form.
 
 
 ## Notebooks

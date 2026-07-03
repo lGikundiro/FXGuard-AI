@@ -33,6 +33,304 @@
       "model_path": "backend\\models\\risk_model_7d.pkl",
       "training_rows": 1139,
       "testing_rows": 285,
+      "class_distribution": {
+        "train": {
+          "Low": 412,
+          "Medium": 436,
+          "High": 291
+        },
+        "test": {
+          "Low": 285,
+          "Medium": 0,
+          "High": 0
+        }
+      },
+      "baseline": {
+        "majority_class": {
+          "accuracy": 0.0,
+          "balanced_accuracy": 0.0,
+          "precision_macro": 0.0,
+          "recall_macro": 0.0,
+          "f1_macro": 0.0,
+          "class_distribution": {
+            "Low": 285,
+            "Medium": 0,
+            "High": 0
+          },
+          "confusion_matrix_labels": [
+            "Low",
+            "Medium",
+            "High"
+          ],
+          "confusion_matrix": [
+            [
+              0,
+              285,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          "classification_report": {
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 285.0
+            },
+            "Medium": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 0.0
+            },
+            "accuracy": 0.0,
+            "macro avg": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 285.0
+            },
+            "weighted avg": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 285.0
+            }
+          },
+          "majority_class": "Medium"
+        }
+      },
+      "evaluation_warnings": [
+        "The chronological test window does not contain these classes: Medium, High. Metrics may look overly strong and should be interpreted with caution."
+      ],
+      "skipped_models": [],
+      "rolling_origin_backtest": [
+        {
+          "train_end": "2024-11-25",
+          "test_start": "2024-11-26",
+          "test_end": "2025-04-16",
+          "testing_rows": 142,
+          "metrics": {
+            "accuracy": 0.5493,
+            "balanced_accuracy": 0.3812,
+            "precision_macro": 0.3848,
+            "recall_macro": 0.3812,
+            "f1_macro": 0.3636,
+            "class_distribution": {
+              "Low": 63,
+              "Medium": 78,
+              "High": 1
+            },
+            "confusion_matrix_labels": [
+              "Low",
+              "Medium",
+              "High"
+            ],
+            "confusion_matrix": [
+              [
+                47,
+                16,
+                0
+              ],
+              [
+                47,
+                31,
+                0
+              ],
+              [
+                1,
+                0,
+                0
+              ]
+            ],
+            "classification_report": {
+              "High": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1-score": 0.0,
+                "support": 1.0
+              },
+              "Low": {
+                "precision": 0.49473684210526314,
+                "recall": 0.746031746031746,
+                "f1-score": 0.5949367088607594,
+                "support": 63.0
+              },
+              "Medium": {
+                "precision": 0.6595744680851063,
+                "recall": 0.3974358974358974,
+                "f1-score": 0.496,
+                "support": 78.0
+              },
+              "accuracy": 0.5492957746478874,
+              "macro avg": {
+                "precision": 0.3847704367301232,
+                "recall": 0.3811558811558811,
+                "f1-score": 0.3636455696202532,
+                "support": 142.0
+              },
+              "weighted avg": {
+                "precision": 0.5817973912906329,
+                "recall": 0.5492957746478874,
+                "f1-score": 0.5364014975931538,
+                "support": 142.0
+              }
+            },
+            "log_loss": 1.5928,
+            "brier_multiclass": 0.56,
+            "mean_top_probability": 0.5407
+          }
+        },
+        {
+          "train_end": "2025-04-16",
+          "test_start": "2025-04-17",
+          "test_end": "2025-09-06",
+          "testing_rows": 143,
+          "metrics": {
+            "accuracy": 0.3916,
+            "balanced_accuracy": 0.484,
+            "precision_macro": 0.3289,
+            "recall_macro": 0.484,
+            "f1_macro": 0.2602,
+            "class_distribution": {
+              "Low": 104,
+              "Medium": 30,
+              "High": 9
+            },
+            "confusion_matrix_labels": [
+              "Low",
+              "Medium",
+              "High"
+            ],
+            "confusion_matrix": [
+              [
+                47,
+                0,
+                57
+              ],
+              [
+                6,
+                0,
+                24
+              ],
+              [
+                0,
+                0,
+                9
+              ]
+            ],
+            "classification_report": {
+              "High": {
+                "precision": 0.1,
+                "recall": 1.0,
+                "f1-score": 0.18181818181818182,
+                "support": 9.0
+              },
+              "Low": {
+                "precision": 0.8867924528301887,
+                "recall": 0.4519230769230769,
+                "f1-score": 0.5987261146496815,
+                "support": 104.0
+              },
+              "Medium": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1-score": 0.0,
+                "support": 30.0
+              },
+              "accuracy": 0.3916083916083916,
+              "macro avg": {
+                "precision": 0.3289308176100629,
+                "recall": 0.483974358974359,
+                "f1-score": 0.2601814321559544,
+                "support": 143.0
+              },
+              "weighted avg": {
+                "precision": 0.6512336719883891,
+                "recall": 0.3916083916083916,
+                "f1-score": 0.44688027664287067,
+                "support": 143.0
+              }
+            },
+            "log_loss": 13.7546,
+            "brier_multiclass": 1.2045,
+            "mean_top_probability": 0.9583
+          }
+        },
+        {
+          "train_end": "2025-09-06",
+          "test_start": "2025-09-07",
+          "test_end": "2026-01-26",
+          "testing_rows": 142,
+          "metrics": {
+            "accuracy": 1.0,
+            "balanced_accuracy": 1.0,
+            "precision_macro": 1.0,
+            "recall_macro": 1.0,
+            "f1_macro": 1.0,
+            "class_distribution": {
+              "Low": 142,
+              "Medium": 0,
+              "High": 0
+            },
+            "confusion_matrix_labels": [
+              "Low",
+              "Medium",
+              "High"
+            ],
+            "confusion_matrix": [
+              [
+                142,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            "classification_report": {
+              "Low": {
+                "precision": 1.0,
+                "recall": 1.0,
+                "f1-score": 1.0,
+                "support": 142.0
+              },
+              "accuracy": 1.0,
+              "macro avg": {
+                "precision": 1.0,
+                "recall": 1.0,
+                "f1-score": 1.0,
+                "support": 142.0
+              },
+              "weighted avg": {
+                "precision": 1.0,
+                "recall": 1.0,
+                "f1-score": 1.0,
+                "support": 142.0
+              }
+            },
+            "log_loss": 2.6133,
+            "brier_multiclass": 0.0114,
+            "mean_top_probability": 0.9242
+          }
+        }
+      ],
       "date_range": {
         "start": "2022-07-26",
         "end": "2026-06-18",
@@ -47,9 +345,15 @@
       "metrics": {
         "logistic_regression": {
           "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
           "precision_macro": 1.0,
           "recall_macro": 1.0,
           "f1_macro": 1.0,
+          "class_distribution": {
+            "Low": 285,
+            "Medium": 0,
+            "High": 0
+          },
           "confusion_matrix_labels": [
             "Low",
             "Medium",
@@ -92,13 +396,22 @@
               "f1-score": 1.0,
               "support": 285.0
             }
-          }
+          },
+          "log_loss": 2.5922,
+          "brier_multiclass": 0.0121,
+          "mean_top_probability": 0.9223
         },
         "random_forest": {
           "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
           "precision_macro": 1.0,
           "recall_macro": 1.0,
           "f1_macro": 1.0,
+          "class_distribution": {
+            "Low": 285,
+            "Medium": 0,
+            "High": 0
+          },
           "confusion_matrix_labels": [
             "Low",
             "Medium",
@@ -141,13 +454,22 @@
               "f1-score": 1.0,
               "support": 285.0
             }
-          }
+          },
+          "log_loss": 3.8746,
+          "brier_multiclass": 0.0035,
+          "mean_top_probability": 0.9651
         },
         "xgboost": {
           "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
           "precision_macro": 1.0,
           "recall_macro": 1.0,
           "f1_macro": 1.0,
+          "class_distribution": {
+            "Low": 285,
+            "Medium": 0,
+            "High": 0
+          },
           "confusion_matrix_labels": [
             "Low",
             "Medium",
@@ -190,7 +512,10 @@
               "f1-score": 1.0,
               "support": 285.0
             }
-          }
+          },
+          "log_loss": 4.7543,
+          "brier_multiclass": 0.0002,
+          "mean_top_probability": 0.9906
         }
       }
     },
@@ -225,6 +550,298 @@
       "model_path": "backend\\models\\risk_model_14d.pkl",
       "training_rows": 1133,
       "testing_rows": 284,
+      "class_distribution": {
+        "train": {
+          "Low": 410,
+          "Medium": 433,
+          "High": 290
+        },
+        "test": {
+          "Low": 284,
+          "Medium": 0,
+          "High": 0
+        }
+      },
+      "baseline": {
+        "majority_class": {
+          "accuracy": 0.0,
+          "balanced_accuracy": 0.0,
+          "precision_macro": 0.0,
+          "recall_macro": 0.0,
+          "f1_macro": 0.0,
+          "class_distribution": {
+            "Low": 284,
+            "Medium": 0,
+            "High": 0
+          },
+          "confusion_matrix_labels": [
+            "Low",
+            "Medium",
+            "High"
+          ],
+          "confusion_matrix": [
+            [
+              0,
+              284,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          "classification_report": {
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 284.0
+            },
+            "Medium": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 0.0
+            },
+            "accuracy": 0.0,
+            "macro avg": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 284.0
+            },
+            "weighted avg": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1-score": 0.0,
+              "support": 284.0
+            }
+          },
+          "majority_class": "Medium"
+        }
+      },
+      "evaluation_warnings": [
+        "The chronological test window does not contain these classes: Medium, High. Metrics may look overly strong and should be interpreted with caution."
+      ],
+      "skipped_models": [],
+      "rolling_origin_backtest": [
+        {
+          "train_end": "2024-11-21",
+          "test_start": "2024-11-22",
+          "test_end": "2025-04-11",
+          "testing_rows": 141,
+          "metrics": {
+            "accuracy": 0.7376,
+            "balanced_accuracy": 0.7625,
+            "precision_macro": 0.7685,
+            "recall_macro": 0.7625,
+            "f1_macro": 0.7374,
+            "class_distribution": {
+              "Low": 59,
+              "Medium": 82,
+              "High": 0
+            },
+            "confusion_matrix_labels": [
+              "Low",
+              "Medium",
+              "High"
+            ],
+            "confusion_matrix": [
+              [
+                54,
+                5,
+                0
+              ],
+              [
+                32,
+                50,
+                0
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            "classification_report": {
+              "Low": {
+                "precision": 0.627906976744186,
+                "recall": 0.9152542372881356,
+                "f1-score": 0.7448275862068966,
+                "support": 59.0
+              },
+              "Medium": {
+                "precision": 0.9090909090909091,
+                "recall": 0.6097560975609756,
+                "f1-score": 0.7299270072992701,
+                "support": 82.0
+              },
+              "accuracy": 0.7375886524822695,
+              "macro avg": {
+                "precision": 0.7684989429175475,
+                "recall": 0.7625051674245555,
+                "f1-score": 0.7373772967530834,
+                "support": 141.0
+              },
+              "weighted avg": {
+                "precision": 0.7914323842082378,
+                "recall": 0.7375886524822695,
+                "f1-score": 0.7361620013102628,
+                "support": 141.0
+              }
+            },
+            "log_loss": 1.8054,
+            "brier_multiclass": 0.4771,
+            "mean_top_probability": 0.6046
+          }
+        },
+        {
+          "train_end": "2025-04-11",
+          "test_start": "2025-04-12",
+          "test_end": "2025-08-31",
+          "testing_rows": 142,
+          "metrics": {
+            "accuracy": 0.4577,
+            "balanced_accuracy": 0.425,
+            "precision_macro": 0.3487,
+            "recall_macro": 0.425,
+            "f1_macro": 0.2912,
+            "class_distribution": {
+              "Low": 113,
+              "Medium": 17,
+              "High": 12
+            },
+            "confusion_matrix_labels": [
+              "Low",
+              "Medium",
+              "High"
+            ],
+            "confusion_matrix": [
+              [
+                51,
+                62,
+                0
+              ],
+              [
+                3,
+                14,
+                0
+              ],
+              [
+                4,
+                8,
+                0
+              ]
+            ],
+            "classification_report": {
+              "High": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1-score": 0.0,
+                "support": 12.0
+              },
+              "Low": {
+                "precision": 0.8793103448275862,
+                "recall": 0.45132743362831856,
+                "f1-score": 0.5964912280701754,
+                "support": 113.0
+              },
+              "Medium": {
+                "precision": 0.16666666666666666,
+                "recall": 0.8235294117647058,
+                "f1-score": 0.27722772277227725,
+                "support": 17.0
+              },
+              "accuracy": 0.45774647887323944,
+              "macro avg": {
+                "precision": 0.3486590038314176,
+                "recall": 0.4249522817976748,
+                "f1-score": 0.29123965028081755,
+                "support": 142.0
+              },
+              "weighted avg": {
+                "precision": 0.7196859316820462,
+                "recall": 0.45774647887323944,
+                "f1-score": 0.5078618314018207,
+                "support": 142.0
+              }
+            },
+            "log_loss": 5.777,
+            "brier_multiclass": 1.0728,
+            "mean_top_probability": 0.9816
+          }
+        },
+        {
+          "train_end": "2025-08-31",
+          "test_start": "2025-09-01",
+          "test_end": "2026-01-20",
+          "testing_rows": 142,
+          "metrics": {
+            "accuracy": 1.0,
+            "balanced_accuracy": 1.0,
+            "precision_macro": 1.0,
+            "recall_macro": 1.0,
+            "f1_macro": 1.0,
+            "class_distribution": {
+              "Low": 142,
+              "Medium": 0,
+              "High": 0
+            },
+            "confusion_matrix_labels": [
+              "Low",
+              "Medium",
+              "High"
+            ],
+            "confusion_matrix": [
+              [
+                142,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            "classification_report": {
+              "Low": {
+                "precision": 1.0,
+                "recall": 1.0,
+                "f1-score": 1.0,
+                "support": 142.0
+              },
+              "accuracy": 1.0,
+              "macro avg": {
+                "precision": 1.0,
+                "recall": 1.0,
+                "f1-score": 1.0,
+                "support": 142.0
+              },
+              "weighted avg": {
+                "precision": 1.0,
+                "recall": 1.0,
+                "f1-score": 1.0,
+                "support": 142.0
+              }
+            },
+            "log_loss": 4.3878,
+            "brier_multiclass": 0.0003,
+            "mean_top_probability": 0.9872
+          }
+        }
+      ],
       "date_range": {
         "start": "2022-07-26",
         "end": "2026-06-11",
@@ -239,9 +856,15 @@
       "metrics": {
         "logistic_regression": {
           "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
           "precision_macro": 1.0,
           "recall_macro": 1.0,
           "f1_macro": 1.0,
+          "class_distribution": {
+            "Low": 284,
+            "Medium": 0,
+            "High": 0
+          },
           "confusion_matrix_labels": [
             "Low",
             "Medium",
@@ -284,13 +907,22 @@
               "f1-score": 1.0,
               "support": 284.0
             }
-          }
+          },
+          "log_loss": 4.3428,
+          "brier_multiclass": 0.0004,
+          "mean_top_probability": 0.9864
         },
         "random_forest": {
           "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
           "precision_macro": 1.0,
           "recall_macro": 1.0,
           "f1_macro": 1.0,
+          "class_distribution": {
+            "Low": 284,
+            "Medium": 0,
+            "High": 0
+          },
           "confusion_matrix_labels": [
             "Low",
             "Medium",
@@ -333,13 +965,22 @@
               "f1-score": 1.0,
               "support": 284.0
             }
-          }
+          },
+          "log_loss": 3.6105,
+          "brier_multiclass": 0.0021,
+          "mean_top_probability": 0.9687
         },
         "xgboost": {
           "accuracy": 1.0,
+          "balanced_accuracy": 1.0,
           "precision_macro": 1.0,
           "recall_macro": 1.0,
           "f1_macro": 1.0,
+          "class_distribution": {
+            "Low": 284,
+            "Medium": 0,
+            "High": 0
+          },
           "confusion_matrix_labels": [
             "Low",
             "Medium",
@@ -382,7 +1023,10 @@
               "f1-score": 1.0,
               "support": 284.0
             }
-          }
+          },
+          "log_loss": 5.8187,
+          "brier_multiclass": 0.0,
+          "mean_top_probability": 0.9965
         }
       }
     }

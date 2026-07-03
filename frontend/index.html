@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -8,591 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #f4efe7;
-      --bg-2: #f7f3eb;
-      --surface: rgba(255, 255, 255, 0.82);
-      --surface-strong: #ffffff;
-      --surface-soft: #fbf8f3;
-      --line: rgba(15, 23, 42, 0.10);
-      --line-strong: rgba(15, 23, 42, 0.16);
-      --text: #142033;
-      --muted: #5f6b7a;
-      --muted-2: #8793a4;
-      --ink: #0e1626;
-      --blue: #2457d6;
-      --blue-2: #113a9f;
-      --blue-soft: #e9efff;
-      --green: #0f8b6c;
-      --green-soft: #e7f7f1;
-      --amber: #ad6a10;
-      --amber-soft: #fff4df;
-      --red: #c43c3c;
-      --red-soft: #feecec;
-      --shadow: 0 20px 60px rgba(19, 31, 48, 0.10);
-      --shadow-soft: 0 10px 30px rgba(19, 31, 48, 0.08);
-    }
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      color: var(--text);
-      font-family: Manrope, system-ui, sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(36, 87, 214, 0.14), transparent 30%),
-        radial-gradient(circle at 85% 12%, rgba(15, 139, 108, 0.12), transparent 24%),
-        linear-gradient(180deg, #faf7f1 0%, var(--bg) 48%, #f8f4ed 100%);
-    }
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background-image: linear-gradient(rgba(20, 32, 51, 0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(20, 32, 51, 0.025) 1px, transparent 1px);
-      background-size: 32px 32px;
-      mask-image: linear-gradient(180deg, rgba(0,0,0,0.16), rgba(0,0,0,0));
-    }
-    .app {
-      min-height: 100vh;
-      display: grid;
-      grid-template-columns: 290px 1fr;
-      gap: 0;
-    }
-    .sidebar {
-      position: sticky;
-      top: 0;
-      height: 100vh;
-      padding: 24px;
-      background: linear-gradient(180deg, rgba(15, 22, 38, 0.94), rgba(15, 22, 38, 0.98));
-      color: white;
-      border-right: 1px solid rgba(255,255,255,0.06);
-      display: flex;
-      flex-direction: column;
-      gap: 22px;
-      box-shadow: 20px 0 50px rgba(4, 9, 17, 0.12);
-    }
-    .brand {
-      display: flex;
-      gap: 14px;
-      align-items: center;
-    }
-    .logo {
-      width: 48px;
-      height: 48px;
-      border-radius: 16px;
-      display: grid;
-      place-items: center;
-      font-weight: 800;
-      color: white;
-      background: linear-gradient(135deg, #4d78ff, #20b28b);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
-    }
-    .brand h1 {
-      margin: 0;
-      font-size: 20px;
-      line-height: 1;
-      letter-spacing: -0.04em;
-      font-family: Fraunces, Georgia, serif;
-    }
-    .brand p {
-      margin: 6px 0 0;
-      color: rgba(255,255,255,0.68);
-      font-size: 13px;
-      line-height: 1.45;
-    }
-    .nav {
-      display: grid;
-      gap: 8px;
-    }
-    .nav button {
-      appearance: none;
-      border: 1px solid transparent;
-      background: transparent;
-      color: rgba(255,255,255,0.72);
-      padding: 13px 14px;
-      border-radius: 14px;
-      text-align: left;
-      font: inherit;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-      cursor: pointer;
-      transition: background-color .18s ease, color .18s ease, transform .18s ease, border-color .18s ease;
-    }
-    .nav button:hover,
-    .nav button.active {
-      color: white;
-      background: rgba(255,255,255,0.10);
-      border-color: rgba(255,255,255,0.08);
-      transform: translateX(2px);
-    }
-    .side-card {
-      margin-top: auto;
-      padding: 18px;
-      border-radius: 20px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
-      border: 1px solid rgba(255,255,255,0.10);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
-    }
-    .side-card h3 {
-      margin: 0 0 8px;
-      font-size: 15px;
-      letter-spacing: -0.02em;
-    }
-    .side-card p {
-      margin: 0;
-      color: rgba(255,255,255,0.74);
-      font-size: 13px;
-      line-height: 1.55;
-    }
-    .main {
-      padding: 28px;
-      overflow: auto;
-    }
-    .shell {
-      max-width: 1280px;
-      margin: 0 auto;
-      display: grid;
-      gap: 18px;
-    }
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 18px;
-    }
-    .eyebrow {
-      margin: 0 0 8px;
-      color: var(--blue-2);
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: .12em;
-      font-size: 11px;
-    }
-    .title h2 {
-      margin: 0;
-      font-size: clamp(30px, 3.6vw, 46px);
-      line-height: .96;
-      letter-spacing: -0.06em;
-      font-family: Fraunces, Georgia, serif;
-    }
-    .title p {
-      margin: 10px 0 0;
-      max-width: 70ch;
-      color: var(--muted);
-      font-size: 16px;
-      line-height: 1.6;
-    }
-    .title p.emphasis {
-      margin-top: 10px;
-      color: var(--ink);
-      font-weight: 700;
-    }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.72);
-      border: 1px solid var(--line);
-      color: var(--muted);
-      box-shadow: var(--shadow-soft);
-      font-size: 13px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-    .grid {
-      display: grid;
-      gap: 18px;
-    }
-    .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .two-col { grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); }
-    .hero-panel {
-      display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
-      gap: 18px;
-    }
-    .hero-copy,
-    .hero-aside,
-    .card {
-      background: var(--surface);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--line);
-      border-radius: 26px;
-      box-shadow: var(--shadow);
-    }
-    .hero-copy {
-      padding: 22px;
-      overflow: hidden;
-      position: relative;
-    }
-    .hero-copy::after {
-      content: "";
-      position: absolute;
-      inset: auto -80px -80px auto;
-      width: 240px;
-      height: 240px;
-      background: radial-gradient(circle, rgba(36,87,214,0.20), transparent 65%);
-      pointer-events: none;
-    }
-    .hero-copy h3 {
-      margin: 0 0 8px;
-      font-family: Fraunces, Georgia, serif;
-      font-size: clamp(18px, 1.85vw, 24px);
-      line-height: 1.08;
-      letter-spacing: -0.05em;
-    }
-    .hero-copy p {
-      margin: 0;
-      max-width: 62ch;
-      color: var(--muted);
-      line-height: 1.7;
-      font-size: 15px;
-    }
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 18px;
-    }
-    .btn {
-      appearance: none;
-      border: 0;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 14px 18px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, var(--blue), var(--blue-2));
-      color: white;
-      font: inherit;
-      font-weight: 800;
-      letter-spacing: -0.01em;
-      cursor: pointer;
-      box-shadow: 0 14px 28px rgba(36,87,214,0.22);
-      transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
-    }
-    .btn:hover { transform: translateY(-1px); filter: brightness(1.02); }
-    .btn.secondary {
-      background: rgba(255,255,255,0.74);
-      color: var(--ink);
-      border: 1px solid var(--line);
-      box-shadow: none;
-    }
-    .btn.full { width: 100%; }
-    .hero-feeds {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 18px;
-    }
-    .feed {
-      padding: 14px;
-      border-radius: 18px;
-      background: rgba(255,255,255,0.72);
-      border: 1px solid var(--line);
-    }
-    .feed small {
-      display: block;
-      color: var(--muted-2);
-      text-transform: uppercase;
-      letter-spacing: .10em;
-      font-size: 11px;
-      font-weight: 800;
-      margin-bottom: 8px;
-    }
-    .feed strong {
-      display: block;
-      font-size: 20px;
-      letter-spacing: -0.04em;
-    }
-    .feed span {
-      display: block;
-      color: var(--muted);
-      margin-top: 6px;
-      font-size: 13px;
-      line-height: 1.45;
-    }
-    .hero-aside {
-      padding: 18px;
-      display: grid;
-      gap: 12px;
-    }
-    .aside-note {
-      padding: 16px;
-      border-radius: 18px;
-      background: linear-gradient(180deg, rgba(36,87,214,0.10), rgba(36,87,214,0.06));
-      border: 1px solid rgba(36,87,214,0.12);
-    }
-    .aside-note h4 {
-      margin: 0 0 8px;
-      font-size: 15px;
-      letter-spacing: -0.02em;
-    }
-    .aside-note p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.6;
-      font-size: 13px;
-    }
-    .mini-list {
-      display: grid;
-      gap: 10px;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-    .mini-list li {
-      padding: 12px 14px;
-      border-radius: 14px;
-      background: rgba(255,255,255,0.76);
-      border: 1px solid var(--line);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-    .mini-list strong {
-      color: var(--text);
-      font-size: 14px;
-    }
-    .card {
-      padding: 22px;
-    }
-    .card.soft {
-      background: linear-gradient(180deg, rgba(255,255,255,0.86), rgba(248, 244, 237, 0.92));
-    }
-    .stat small,
-    .section-label {
-      color: var(--muted-2);
-      text-transform: uppercase;
-      font-weight: 800;
-      font-size: 11px;
-      letter-spacing: .11em;
-    }
-    .stat strong {
-      display: block;
-      margin-top: 10px;
-      font-size: 28px;
-      letter-spacing: -0.05em;
-    }
-    .stat span {
-      display: block;
-      color: var(--muted);
-      margin-top: 7px;
-      line-height: 1.5;
-      font-size: 13px;
-    }
-    .section-title {
-      margin: 0 0 12px;
-      font-size: 18px;
-      line-height: 1.1;
-      letter-spacing: -0.04em;
-      font-family: Fraunces, Georgia, serif;
-    }
-    .section-copy {
-      margin: -2px 0 14px;
-      color: var(--muted);
-      line-height: 1.65;
-      font-size: 14px;
-    }
-    .currency-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 18px;
-      border-radius: 18px;
-      background: var(--surface-soft);
-      border: 1px solid var(--line);
-    }
-    .currency-card h3 {
-      margin: 0;
-      font-size: 18px;
-      letter-spacing: -0.04em;
-      font-family: Fraunces, Georgia, serif;
-    }
-    .currency-card p {
-      margin: 6px 0 0;
-      color: var(--muted);
-      line-height: 1.55;
-      font-size: 13px;
-      max-width: 60ch;
-    }
-    .risk-pill {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 999px;
-      padding: 8px 12px;
-      font-size: 12px;
-      font-weight: 900;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-    .risk-Low { background: var(--green-soft); color: var(--green); }
-    .risk-Medium { background: var(--amber-soft); color: var(--amber); }
-    .risk-High { background: var(--red-soft); color: var(--red); }
-    .form { display: grid; gap: 14px; }
-    label {
-      display: block;
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 800;
-      letter-spacing: -0.01em;
-      margin-bottom: 7px;
-    }
-    input, select, textarea {
-      width: 100%;
-      border: 1px solid var(--line-strong);
-      border-radius: 16px;
-      background: rgba(255,255,255,0.92);
-      color: var(--text);
-      padding: 13px 14px;
-      font: inherit;
-      outline: none;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
-    }
-    input:focus, select:focus, textarea:focus {
-      border-color: rgba(36,87,214,0.55);
-      box-shadow: 0 0 0 4px rgba(36,87,214,0.10);
-    }
-    .toggle {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-    .toggle button {
-      padding: 12px 13px;
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,0.82);
-      border-radius: 14px;
-      font: inherit;
-      font-weight: 800;
-      cursor: pointer;
-      color: var(--muted);
-      transition: background-color .18s ease, color .18s ease, border-color .18s ease;
-    }
-    .toggle button.selected {
-      background: linear-gradient(135deg, var(--blue), var(--blue-2));
-      color: white;
-      border-color: transparent;
-    }
-    .screen { display: none; animation: fadeUp .24s ease both; }
-    .screen.active { display: block; }
-    .hidden { display: none !important; }
-    .result-hero {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
-    }
-    .big-risk {
-      padding: 22px;
-      border-radius: 22px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248, 244, 237, 0.98));
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow-soft);
-    }
-    .big-risk small {
-      color: var(--muted-2);
-      text-transform: uppercase;
-      font-weight: 900;
-      font-size: 11px;
-      letter-spacing: .11em;
-    }
-    .big-risk h3 {
-      margin: 12px 0 8px;
-      font-family: Manrope, system-ui, sans-serif;
-      font-weight: 800;
-      font-size: clamp(20px, 2.1vw, 30px);
-      letter-spacing: -0.06em;
-      line-height: 1.08;
-    }
-    .big-risk p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.65;
-      font-size: 14px;
-    }
-    .driver {
-      display: flex;
-      justify-content: space-between;
-      gap: 18px;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--line);
-      font-size: 14px;
-    }
-    .driver:last-child { border-bottom: 0; }
-    .driver span { color: var(--muted); }
-    .driver strong { font-variant-numeric: tabular-nums; }
-    .recommendation {
-      padding: 14px 16px;
-      border-radius: 16px;
-      margin-bottom: 12px;
-      line-height: 1.55;
-      background: var(--blue-soft);
-      border: 1px solid rgba(36,87,214,0.18);
-      color: #16398f;
-    }
-    .disclaimer {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.6;
-      margin-top: 14px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-    th, td {
-      text-align: left;
-      padding: 13px 0;
-      border-bottom: 1px solid var(--line);
-      vertical-align: top;
-    }
-    th {
-      color: var(--muted-2);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: .11em;
-    }
-    .toast {
-      position: fixed;
-      right: 24px;
-      bottom: 24px;
-      background: #0f172a;
-      color: white;
-      padding: 15px 18px;
-      border-radius: 14px;
-      box-shadow: var(--shadow);
-      display: none;
-      z-index: 20;
-    }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @media (max-width: 1100px) {
-      .app { grid-template-columns: 1fr; }
-      .sidebar { position: static; height: auto; }
-      .hero-panel, .stats, .two-col, .result-hero, .hero-feeds { grid-template-columns: 1fr; }
-      .topbar { flex-direction: column; }
-    }
-    @media (max-width: 720px) {
-      .main { padding: 16px; }
-      .sidebar { padding: 18px; }
-      .card, .hero-copy, .hero-aside { padding: 18px; }
-      .currency-card { flex-direction: column; align-items: flex-start; }
-      .hero-actions { width: 100%; }
-      .hero-actions .btn { width: 100%; }
-    }
-  </style>
+  <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
   <div class="app">
@@ -638,7 +54,7 @@
               <h3>See whether this payment still feels safe.</h3>
               <div class="hero-actions">
                 <button class="btn" id="heroCheckBtn">Check a payment</button>
-                <button class="btn secondary" onclick="showScreen('assessment')">Review the assessment form</button>
+                <button class="btn secondary" data-go-screen="assessment">Review the assessment form</button>
               </div>
               <div class="hero-feeds">
                 <div class="feed">
@@ -672,14 +88,14 @@
             </div>
           </div>
 
-          <div class="grid stats" style="margin-top:18px;">
+          <div class="grid stats mt-18">
             <div class="card stat"><small>Currency pair</small><strong>USD - RWF</strong><span>Built for USD supplier payments and budget planning.</span></div>
             <div class="card stat"><small>Latest rate</small><strong id="latestRateStat">—</strong><span id="latestDateStat">Loading...</span></div>
             <div class="card stat"><small>Short-term view</small><strong id="model7Stat">Ready</strong><span>The 7-day model is loaded and available.</span></div>
             <div class="card stat"><small>Planning view</small><strong id="model14Stat">Ready</strong><span>The 14-day model is loaded and available.</span></div>
           </div>
 
-          <div class="grid two-col" style="margin-top:18px;">
+          <div class="grid two-col mt-18">
             <div class="card">
               <div class="section-label">Rate movement</div>
               <h3 class="section-title">Recent USD - RWF trend</h3>
@@ -698,7 +114,7 @@
             </div>
           </div>
 
-          <div class="grid two-col" style="margin-top:18px;">
+          <div class="grid two-col mt-18">
             <div class="card">
               <div class="section-label">Why this exists</div>
               <h3 class="section-title">A simple question, answered clearly</h3>
@@ -752,7 +168,7 @@
             <div class="section-label">No result yet</div>
             <h3 class="section-title">Run a payment check first</h3>
             <p class="section-copy">The result view is where the app translates the model output into an action a person can actually use.</p>
-            <button class="btn" onclick="showScreen('assessment')">Go to assessment</button>
+            <button class="btn" data-go-screen="assessment">Go to assessment</button>
           </div>
 
           <div id="resultContent" class="hidden">
@@ -762,13 +178,13 @@
               <div class="big-risk"><small>Possible extra cost</small><h3 id="extraCost">—</h3><p id="confidenceText">—</p></div>
             </div>
 
-            <div class="grid two-col" style="margin-top:18px;">
+            <div class="grid two-col mt-18">
               <div class="card soft">
                 <div class="section-label">Next steps</div>
                 <h3 class="section-title">Recommendations in plain language</h3>
                 <p class="section-copy">These are meant to be the most useful actions for someone handling the payment, not a list of model features.</p>
-                <div id="recommendations"></div>
-                <button class="btn" style="margin-top:14px;" onclick="showScreen('decision')">View action plan</button>
+                <div id="resultRecommendations"></div>
+                <button class="btn mt-14" data-go-screen="decision">View action plan</button>
               </div>
               <div class="card">
                 <div class="section-label">Why this result</div>
@@ -778,7 +194,7 @@
               </div>
             </div>
 
-            <div class="card" style="margin-top:18px;">
+            <div class="card mt-18">
               <div class="section-label">Model shape</div>
               <h3 class="section-title">How the outlook is split</h3>
               <p class="section-copy">This chart shows the model's distribution across Low, Medium, and High risk. It is useful for understanding whether the answer was decisive or borderline.</p>
@@ -799,7 +215,7 @@
               <div class="card">
                 <div class="section-label">Recommended actions</div>
                 <h3 class="section-title">What to do next</h3>
-                <div id="recommendations"></div>
+                <div id="decisionRecommendations"></div>
               </div>
               <div class="card soft">
                 <div class="section-label">Simple estimate</div>
@@ -817,15 +233,17 @@
           <div class="card">
             <div class="section-label">Feedback</div>
             <h3 class="section-title">Participant feedback form</h3>
-            <p class="section-copy">Your honest feedback means a lot on how we improve this product. Your responses will be saved in an Excel file for review.</p>
-            <div class="form" style="max-width:640px;">
-              <div><label>How clear was it? (1–5)</label><input id="clarity" type="number" min="1" max="5" value="5"></div>
-              <div><label>How useful was it? (1–5)</label><input id="usefulness" type="number" min="1" max="5" value="5"></div>
-              <div><label>Comments</label><textarea id="comment" rows="4" placeholder="What was helpful or confusing?"></textarea></div>
-              <div><label>Participant name (optional)</label><input id="participantName" placeholder="e.g. Aline" /></div>
-              <div><label>Import category (optional)</label><input id="importCategory" placeholder="e.g. Raw materials" /></div>
-              <div><label>Phone number (optional)</label><input id="phoneNumber" placeholder="e.g. +250 7XX XXX XXX" /></div>
-              <button class="btn" id="saveFeedback">Save feedback</button>
+            <p class="section-copy">Please share your feedback after using FXGuard AI. Responses are saved directly in the Google response spreadsheet connected to this form.</p>
+            <div class="hero-actions feedback-actions">
+              <a class="btn secondary" href="https://docs.google.com/forms/d/e/1FAIpQLSd3E97VFGFl7v-9ojSAAmPc4RkE-30tf9YCJ_XUhPuw8JFbBg/viewform?usp=sharing&ouid=104016241045115446299" target="_blank" rel="noopener">Open form in new tab</a>
+            </div>
+            <div class="feedback-embed">
+              <iframe
+                title="FXGuard AI User feedback"
+                src="https://docs.google.com/forms/d/e/1FAIpQLSd3E97VFGFl7v-9ojSAAmPc4RkE-30tf9YCJ_XUhPuw8JFbBg/viewform?embedded=true"
+                loading="lazy">
+                Loading feedback form...
+              </iframe>
             </div>
           </div>
         </section>
@@ -835,234 +253,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script>
-    const API = window.location.origin;
-    let selectedHorizon = 7;
-    let selectedMainHorizon = 7;
-    let latestResult = null;
-    let historyChart = null;
-    let probChart = null;
-
-    const titles = {
-      dashboard: [
-        'Dashboard',
-        'A calm overview of the latest rate, the recent trend, and the fastest path to a payment decision.'
-      ],
-      assessment: [
-        'Payment check',
-        'Enter a payment amount and choose how far ahead you want to look.'
-      ],
-      results: [
-        'Decision view',
-        'See the outcome, why it happened, and what it means for the payment.'
-      ],
-      decision: [
-        'Action plan',
-        'Turn the model result into a concrete next step.'
-      ],
-      feedback: [
-        'Participant feedback',
-        'Collecting usability feedback from test participants.'
-      ]
-    };
-
-    document.querySelectorAll('.nav button').forEach(btn => btn.addEventListener('click', () => showScreen(btn.dataset.screen)));
-    document.querySelectorAll('[data-horizon]').forEach(btn => btn.addEventListener('click', () => {
-      selectedHorizon = Number(btn.dataset.horizon);
-      document.querySelectorAll('[data-horizon]').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-    }));
-    document.querySelectorAll('[data-horizon-main]').forEach(btn => btn.addEventListener('click', () => {
-      selectedMainHorizon = Number(btn.dataset.horizonMain);
-      document.querySelectorAll('[data-horizon-main]').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-    }));
-
-    document.getElementById('heroCheckBtn').addEventListener('click', () => showScreen('assessment'));
-
-    function showScreen(id) {
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      const screen = document.getElementById(id);
-      if (screen) screen.classList.add('active');
-      document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('active', b.dataset.screen === id));
-      document.getElementById('pageTitle').textContent = titles[id][0];
-      document.getElementById('pageSubtitle').textContent = titles[id][1];
-      document.getElementById('pageSubtitleEmphasis').style.display = id === 'dashboard' ? 'block' : 'none';
-    }
-
-    function fmt(num) {
-      return new Intl.NumberFormat('en-RW', { maximumFractionDigits: 0 }).format(num);
-    }
-    function fmtRate(num) {
-      return new Intl.NumberFormat('en-RW', { maximumFractionDigits: 3 }).format(num);
-    }
-    function toast(msg) {
-      const t = document.getElementById('toast');
-      t.textContent = msg;
-      t.style.display = 'block';
-      setTimeout(() => t.style.display = 'none', 3200);
-    }
-
-    async function init() {
-      const latest = await fetch(`${API}/api/latest-rate`).then(r => r.json());
-      document.getElementById('latestRate').textContent = fmtRate(latest.mid_rate);
-      document.getElementById('latestDate').textContent = `Latest update: ${latest.date}`;
-      document.getElementById('latestRateStat').textContent = fmtRate(latest.mid_rate);
-      document.getElementById('latestDateStat').textContent = `Latest update: ${latest.date}`;
-      document.getElementById('dataBadge').textContent = `Recent rate data • ${latest.date}`;
-
-      const metadata = await fetch(`${API}/api/model-metadata`).then(r => r.json());
-      document.getElementById('model7').textContent = metadata?.models?.['7d']?.best_model ? 'Ready' : 'Loaded';
-      document.getElementById('model14').textContent = metadata?.models?.['14d']?.best_model ? 'Ready' : 'Loaded';
-      document.getElementById('model7Stat').textContent = metadata?.models?.['7d']?.best_model ? 'Ready' : 'Loaded';
-      document.getElementById('model14Stat').textContent = metadata?.models?.['14d']?.best_model ? 'Ready' : 'Loaded';
-
-      await drawHistory();
-    }
-
-    async function drawHistory() {
-      const data = await fetch(`${API}/api/history?days=180`).then(r => r.json());
-      const ctx = document.getElementById('historyChart');
-      if (historyChart) historyChart.destroy();
-      historyChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: data.points.map(p => p.date),
-          datasets: [{
-            label: 'USD - RWF',
-            data: data.points.map(p => p.mid_rate),
-            tension: .28,
-            borderColor: '#2457d6',
-            backgroundColor: 'rgba(36,87,214,.10)',
-            fill: true,
-            pointRadius: 0,
-            borderWidth: 2.5
-          }]
-        },
-        options: {
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { maxTicksLimit: 8, color: '#728196' }, grid: { display: false } },
-            y: { ticks: { color: '#728196' }, grid: { color: 'rgba(20,32,51,0.08)' } }
-          }
-        }
-      });
-    }
-
-    async function runAssessment(amount, horizon) {
-      const res = await fetch(`${API}/api/predict-risk`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          currency: 'USD',
-          amount: Number(amount),
-          horizon: Number(horizon),
-          margin_percent: Number(document.getElementById('margin')?.value || 0) || null
-        })
-      });
-
-      if (!res.ok) {
-        toast('Failed to analyze risk. Check backend logs.');
-        return;
-      }
-
-      latestResult = await res.json();
-      renderResult(latestResult);
-      showScreen('results');
-    }
-
-    function renderResult(r) {
-      document.getElementById('emptyResult').classList.add('hidden');
-      document.getElementById('resultContent').classList.remove('hidden');
-      document.getElementById('emptyDecision').classList.add('hidden');
-      document.getElementById('decisionContent').classList.remove('hidden');
-
-      const riskEl = document.getElementById('riskLevel');
-      riskEl.textContent = r.risk_level;
-      riskEl.style.color = r.risk_level === 'High' ? 'var(--red)' : r.risk_level === 'Medium' ? 'var(--amber)' : 'var(--green)';
-      document.getElementById('riskMeaning').textContent = `For the next ${r.horizon_days} days, this looks like a ${r.risk_level.toLowerCase()}-pressure payment outlook.`;
-      document.getElementById('currentCost').textContent = `RWF ${fmt(r.current_cost_rwf)}`;
-      document.getElementById('currentRateText').textContent = `Current rate: ${fmtRate(r.current_rate)} RWF for 1 USD`;
-      document.getElementById('extraCost').textContent = `RWF ${fmt(r.possible_extra_cost_rwf)}`;
-
-      const confidenceScore = r.confidence_score ?? r.confidence ?? 0;
-      const drivers = r.key_drivers || {};
-      const driverLabels = {
-        daily_return: 'Latest day-to-day change',
-        return_7d: 'Change over the last 7 days',
-        return_14d: 'Change over the last 14 days',
-        ma_7: '7-day average rate',
-        ma_30: '30-day average rate',
-        ma_gap: 'Short-term vs long-term difference',
-        volatility_7d: 'How much the rate has been moving',
-        momentum_7d: 'Recent direction of movement',
-        spread_pct: 'Rate spread as a percentage',
-        depreciation_days_7d: 'Recent weaker days'
-      };
-      document.getElementById('drivers').innerHTML = Object.entries(drivers)
-        .map(([k, v]) => `<div class="driver"><span>${driverLabels[k] || k.replaceAll('_', ' ')}</span><strong>${v}</strong></div>`)
-        .join('');
-
-      const probs = r.class_probabilities || {};
-      const probabilitySummary = Object.entries(probs)
-        .sort((a, b) => b[1] - a[1])
-        .map(([label, probability]) => `${label} ${Math.round(probability * 100)}%`)
-        .join(' · ');
-      const topLabel = r.top_probability_label || r.risk_level;
-      const topProbability = r.predicted_probability ?? confidenceScore;
-      document.getElementById('confidenceText').textContent = `Confidence: ${Math.round(confidenceScore * 100)}% • Top class: ${topLabel} at ${Math.round(topProbability * 100)}%${probabilitySummary ? ` • ${probabilitySummary}` : ''}`;
-
-      if (probChart) probChart.destroy();
-      probChart = new Chart(document.getElementById('probChart'), {
-        type: 'bar',
-        data: {
-          labels: Object.keys(probs),
-          datasets: [{
-            data: Object.values(probs).map(p => p * 100),
-            backgroundColor: ['#0f8b6c', '#ad6a10', '#c43c3c']
-          }]
-        },
-        options: {
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } }
-        }
-      });
-
-      document.getElementById('recommendations').innerHTML = r.recommendations.map(x => `<div class="recommendation">${x}</div>`).join('');
-      document.getElementById('scenarioRows').innerHTML = `
-        <tr><td>Payment amount</td><td><strong>${fmt(r.amount_usd)} USD</strong></td></tr>
-        <tr><td>Current rate</td><td><strong>${fmtRate(r.current_rate)} RWF per USD</strong></td></tr>
-        <tr><td>Cost today</td><td><strong>RWF ${fmt(r.current_cost_rwf)}</strong></td></tr>
-        <tr><td>Possible added cost</td><td><strong style="color:var(--red)">RWF ${fmt(r.possible_extra_cost_rwf)}</strong></td></tr>
-        <tr><td>Suggested safety cushion</td><td><strong style="color:var(--amber)">RWF ${fmt(r.suggested_margin_buffer_rwf)}</strong></td></tr>`;
-      document.getElementById('disclaimer').textContent = 'This estimate is for planning only. It is not a promise of future rates.';
-    }
-
-    document.getElementById('quickAnalyze').addEventListener('click', () => runAssessment(document.getElementById('quickAmount').value, selectedHorizon));
-    document.getElementById('analyzeBtn').addEventListener('click', () => runAssessment(document.getElementById('amount').value, selectedMainHorizon));
-    document.getElementById('saveFeedback').addEventListener('click', async () => {
-      const body = {
-        participant_name: document.getElementById('participantName').value || null,
-        import_category: document.getElementById('importCategory').value || null,
-        phone_number: document.getElementById('phoneNumber').value || null,
-        clarity_rating: Number(document.getElementById('clarity').value),
-        usefulness_rating: Number(document.getElementById('usefulness').value),
-        comment: document.getElementById('comment').value || null
-      };
-      const res = await fetch(`${API}/api/feedback`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      toast(res.ok ? 'Feedback saved.' : 'Feedback could not be saved.');
-    });
-
-    init().catch(err => {
-      console.error(err);
-      toast('Could not load data. Is the backend running?');
-    });
-  </script>
+  <script src="/static/app.js"></script>
 </body>
 </html>
+
