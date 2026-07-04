@@ -5,6 +5,7 @@ FXGuard AI is a full-stack web application integrated with machine learning mode
 The MVP focuses on **USD-RWF only** using a prepared 4-year BNR dataset. The architecture is designed so that EUR, GBP, KES, UGX, CNY, and other currencies can be added later using the same data-preparation pipeline.
 
 Deployed link to project: https://fxguard-ai.onrender.com/
+YouTube Demo: https://youtu.be/jNrEOB-uwfE
 
 ## What the project includes
 
