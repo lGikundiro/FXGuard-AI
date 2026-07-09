@@ -1,10 +1,10 @@
 # FXGuard AI Project Summary
 
-FXGuard AI is a web-based exchange-rate risk forecasting and decision-support system for Rwanda-based importers. It classifies USD/RWF short-term depreciation risk into Low, Medium, or High categories using engineered features from BNR exchange-rate data.
+FXGuard AI is a web-based exchange-rate risk forecasting, classification, and decision-support system for Rwanda-based importers. It classifies USD-RWF short-term depreciation risk into Low, Medium, or High categories using engineered features from BNR exchange-rate data.
 
 The MVP supports:
 
-1. Dashboard overview
+1. Only two currencies: USD -RWF
 2. New USD payment assessment
 3. Risk results
 4. Decision support

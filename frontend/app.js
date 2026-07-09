@@ -59,11 +59,172 @@
     function fmtRate(num) {
       return new Intl.NumberFormat('en-RW', { maximumFractionDigits: 3 }).format(num);
     }
+    function fmtSignedRate(num) {
+      const sign = num > 0 ? '+' : '';
+      return `${sign}${fmtRate(num)}`;
+    }
+    function fmtPercent(num) {
+      const sign = num > 0 ? '+' : '';
+      return `${sign}${num.toFixed(2)}%`;
+    }
     function toast(msg) {
       const t = document.getElementById('toast');
       t.textContent = msg;
       t.style.display = 'block';
       setTimeout(() => t.style.display = 'none', 3200);
+    }
+
+    function updateTrendSummary(points) {
+      const latestEl = document.getElementById('trendLatest');
+      const changeEl = document.getElementById('trendChange');
+      const directionEl = document.getElementById('trendDirection');
+      if (!points.length) {
+        latestEl.textContent = '--';
+        changeEl.textContent = '--';
+        directionEl.textContent = 'No data';
+        return;
+      }
+
+      const first = points[0];
+      const last = points[points.length - 1];
+      const change = last.mid_rate - first.mid_rate;
+      const percentChange = first.mid_rate ? (change / first.mid_rate) * 100 : 0;
+      const direction = Math.abs(percentChange) < 0.05 ? 'Mostly flat' : percentChange > 0 ? 'Rising' : 'Falling';
+
+      latestEl.textContent = `${fmtRate(last.mid_rate)} RWF`;
+      changeEl.textContent = `${fmtSignedRate(change)} RWF (${fmtPercent(percentChange)})`;
+      directionEl.textContent = direction;
+      directionEl.style.color = percentChange > 0.05 ? 'var(--amber)' : percentChange < -0.05 ? 'var(--green)' : 'var(--muted)';
+    }
+
+    function getCanvasContext(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const width = Math.max(Math.round(rect.width), 320);
+      const height = Math.max(Math.round(rect.height), Number(canvas.getAttribute('height')) || 160);
+      const scale = window.devicePixelRatio || 1;
+
+      canvas.width = Math.round(width * scale);
+      canvas.height = Math.round(height * scale);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      return { ctx, width, height };
+    }
+
+    function drawCanvasLineChart(canvas, points) {
+      if (!points.length) return;
+
+      const { ctx, width, height } = getCanvasContext(canvas);
+      const values = points.map(p => p.mid_rate);
+      const rawMin = Math.min(...values);
+      const rawMax = Math.max(...values);
+      const rawRange = rawMax - rawMin || 1;
+      const min = rawMin - rawRange * 0.12;
+      const max = rawMax + rawRange * 0.12;
+      const range = max - min || 1;
+      const pad = { top: 16, right: 18, bottom: 30, left: 58 };
+      const chartWidth = width - pad.left - pad.right;
+      const chartHeight = height - pad.top - pad.bottom;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = 'rgba(20,32,51,0.08)';
+      ctx.lineWidth = 1;
+      ctx.fillStyle = '#728196';
+      ctx.font = '12px Manrope, Segoe UI, sans-serif';
+
+      for (let i = 0; i <= 3; i += 1) {
+        const y = pad.top + (chartHeight / 3) * i;
+        const value = max - (range / 3) * i;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(width - pad.right, y);
+        ctx.stroke();
+        ctx.fillText(fmtRate(value), 8, y + 4);
+      }
+
+      const first = points[0];
+      const last = points[points.length - 1];
+      ctx.fillText(first.date.slice(5), pad.left, height - 12);
+      ctx.textAlign = 'right';
+      ctx.fillText(last.date.slice(5), width - pad.right, height - 12);
+      ctx.textAlign = 'left';
+
+      const path = new Path2D();
+      points.forEach((point, index) => {
+        const x = pad.left + (chartWidth * index) / Math.max(points.length - 1, 1);
+        const y = pad.top + chartHeight - ((point.mid_rate - min) / range) * chartHeight;
+        if (index === 0) path.moveTo(x, y);
+        else path.lineTo(x, y);
+      });
+
+      const gradient = ctx.createLinearGradient(0, pad.top, 0, height - pad.bottom);
+      gradient.addColorStop(0, 'rgba(36,87,214,0.18)');
+      gradient.addColorStop(1, 'rgba(36,87,214,0)');
+      const area = new Path2D(path);
+      area.lineTo(width - pad.right, height - pad.bottom);
+      area.lineTo(pad.left, height - pad.bottom);
+      area.closePath();
+      ctx.fillStyle = gradient;
+      ctx.fill(area);
+
+      ctx.strokeStyle = '#2457d6';
+      ctx.lineWidth = 2.5;
+      ctx.stroke(path);
+
+      const lastPoint = points[points.length - 1];
+      const lastX = pad.left + chartWidth;
+      const lastY = pad.top + chartHeight - ((lastPoint.mid_rate - min) / range) * chartHeight;
+      ctx.fillStyle = '#2457d6';
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawCanvasBarChart(canvas, probabilities) {
+      const entries = Object.entries(probabilities);
+      if (!entries.length) return;
+
+      const { ctx, width, height } = getCanvasContext(canvas);
+      const pad = { top: 18, right: 18, bottom: 36, left: 42 };
+      const chartWidth = width - pad.left - pad.right;
+      const chartHeight = height - pad.top - pad.bottom;
+      const colors = ['#0f8b6c', '#ad6a10', '#c43c3c'];
+      const slot = chartWidth / entries.length;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = 'rgba(20,32,51,0.08)';
+      ctx.fillStyle = '#728196';
+      ctx.font = '12px Manrope, Segoe UI, sans-serif';
+
+      for (let i = 0; i <= 4; i += 1) {
+        const y = pad.top + (chartHeight / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(width - pad.right, y);
+        ctx.stroke();
+        ctx.fillText(`${100 - i * 25}%`, 8, y + 4);
+      }
+
+      entries.forEach(([label, probability], index) => {
+        const value = probability * 100;
+        const barHeight = (value / 100) * chartHeight;
+        const x = pad.left + slot * index + slot * 0.25;
+        const y = pad.top + chartHeight - barHeight;
+        const barWidth = slot * 0.5;
+
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.fillRect(x, y, barWidth, barHeight);
+        ctx.fillStyle = '#142033';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, x + barWidth / 2, height - 12);
+        ctx.fillText(`${Math.round(value)}%`, x + barWidth / 2, y - 6);
+      });
+      ctx.textAlign = 'left';
     }
 
     async function init() {
@@ -89,29 +250,77 @@
 
     async function drawHistory() {
       const data = await fetch(`${API}/api/history?days=180`).then(r => r.json());
-      const ctx = document.getElementById('historyChart');
+      const points = data.points || [];
+      updateTrendSummary(points);
+      const canvas = document.getElementById('historyChart');
+      if (typeof Chart === 'undefined') {
+        drawCanvasLineChart(canvas, points);
+        return;
+      }
       if (historyChart) historyChart.destroy();
-      historyChart = new Chart(ctx, {
+      const values = points.map(p => p.mid_rate);
+      const rawMin = Math.min(...values);
+      const rawMax = Math.max(...values);
+      const rawRange = rawMax - rawMin || 1;
+      const lineCtx = canvas.getContext('2d');
+      const gradient = lineCtx.createLinearGradient(0, 0, 0, 260);
+      gradient.addColorStop(0, 'rgba(36,87,214,0.20)');
+      gradient.addColorStop(1, 'rgba(36,87,214,0)');
+      historyChart = new Chart(canvas, {
         type: 'line',
         data: {
-          labels: data.points.map(p => p.date),
+          labels: points.map(p => p.date),
           datasets: [{
             label: 'USD - RWF',
-            data: data.points.map(p => p.mid_rate),
-            tension: .28,
+            data: values,
+            tension: .32,
             borderColor: '#2457d6',
-            backgroundColor: 'rgba(36,87,214,.10)',
+            backgroundColor: gradient,
             fill: true,
-            pointRadius: 0,
+            pointRadius: points.map((_, index) => index === points.length - 1 ? 3 : 0),
+            pointHoverRadius: 4,
+            pointBackgroundColor: '#2457d6',
             borderWidth: 2.5
           }]
         },
         options: {
+          responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              displayColors: false,
+              callbacks: {
+                title: items => items[0]?.label || '',
+                label: item => `Rate: ${fmtRate(item.parsed.y)} RWF`
+              }
+            }
+          },
           scales: {
-            x: { ticks: { maxTicksLimit: 8, color: '#728196' }, grid: { display: false } },
-            y: { ticks: { color: '#728196' }, grid: { color: 'rgba(20,32,51,0.08)' } }
+            x: {
+              ticks: {
+                maxTicksLimit: 5,
+                color: '#728196',
+                callback: function(value) {
+                  const label = this.getLabelForValue(value);
+                  return label ? label.slice(5) : '';
+                }
+              },
+              grid: { display: false },
+              border: { display: false }
+            },
+            y: {
+              min: rawMin - rawRange * 0.12,
+              max: rawMax + rawRange * 0.12,
+              ticks: {
+                maxTicksLimit: 4,
+                color: '#728196',
+                callback: value => fmtRate(value)
+              },
+              grid: { color: 'rgba(20,32,51,0.08)' },
+              border: { display: false }
+            }
           }
         }
       });
@@ -181,6 +390,9 @@
       document.getElementById('confidenceText').textContent = `Confidence: ${Math.round(confidenceScore * 100)}% • Top class: ${topLabel} at ${Math.round(topProbability * 100)}%${probabilitySummary ? ` • ${probabilitySummary}` : ''}`;
 
       if (probChart) probChart.destroy();
+      if (typeof Chart === 'undefined') {
+        drawCanvasBarChart(document.getElementById('probChart'), probs);
+      } else {
       probChart = new Chart(document.getElementById('probChart'), {
         type: 'bar',
         data: {
@@ -196,6 +408,7 @@
           scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } }
         }
       });
+      }
 
       const recommendationHtml = r.recommendations.map(x => `<div class="recommendation">${x}</div>`).join('');
       document.getElementById('resultRecommendations').innerHTML = recommendationHtml;

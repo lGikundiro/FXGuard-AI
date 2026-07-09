@@ -7,7 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -99,8 +99,24 @@
             <div class="card">
               <div class="section-label">Rate movement</div>
               <h3 class="section-title">Recent USD - RWF trend</h3>
-              <p class="section-copy">A small rise in the chart means a future USD payment may cost more RWF. The chart is there to explain the current mood of the market, not to overwhelm the user with raw data.</p>
-              <canvas id="historyChart" height="130"></canvas>
+              <p class="section-copy">A quick read of how the USD cost has moved recently. Higher rates mean a USD payment needs more RWF.</p>
+              <div class="chart-summary" aria-label="Recent rate summary">
+                <div>
+                  <span>Latest</span>
+                  <strong id="trendLatest">--</strong>
+                </div>
+                <div>
+                  <span>180-day change</span>
+                  <strong id="trendChange">--</strong>
+                </div>
+                <div>
+                  <span>Direction</span>
+                  <strong id="trendDirection">--</strong>
+                </div>
+              </div>
+              <div class="chart-frame">
+                <canvas id="historyChart" height="180"></canvas>
+              </div>
             </div>
             <div class="card soft">
               <div class="section-label">Quick action</div>
