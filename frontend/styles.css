@@ -368,14 +368,15 @@ body {
   margin-bottom: var(--sp-6);
 }
 .kpi-value {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 600;
   color: var(--text-primary);
-  line-height: 1.2;
-  margin-bottom: var(--sp-4);
+  line-height: 1.25;
+  margin-bottom: var(--sp-6);
 }
-.kpi-value.mono { font-family: var(--font-mono); font-size: 20px; }
-.kpi-sub { font-size: 12px; color: var(--text-muted); }
+.kpi-value.mono { font-family: var(--font-mono); font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+.kpi-value.kpi-status { font-size: 18px; color: var(--blue-700); }
+.kpi-sub { font-size: 12px; color: var(--text-muted); line-height: 1.45; }
 
 /* --- Dashboard body --------------------------------------- */
 .dashboard-body {
