@@ -1,0 +1,280 @@
+{
+  "generated_at": "2026-07-18T18:52:37+00:00",
+  "currencies": [
+    "USD",
+    "EUR",
+    "KES"
+  ],
+  "data": {
+    "generated_at": "2026-07-18",
+    "source": "Direct National Bank of Rwanda Excel exports",
+    "source_url": "https://www.bnr.rw/exchangeRate",
+    "delivery_mode": "manual official export",
+    "currencies": [
+      "USD",
+      "EUR",
+      "KES"
+    ],
+    "raw_files": {
+      "USD": {
+        "filename": "USD exchange history.xlsx",
+        "sha256": "13ec6f807cc61d14381903803fd4a57f6c46227024348b2f5c37db904e7a7b4d",
+        "rows": 1110
+      },
+      "EUR": {
+        "filename": "Euro exchange history.xlsx",
+        "sha256": "0fb4d33f7e0f77c8fdabf4ee097ed193ca40417a0526170c45c3b4d2c63b95c3",
+        "rows": 1110
+      },
+      "KES": {
+        "filename": "KES exchange hsitroy.xlsx",
+        "sha256": "3cad08a9ff9923eaa5cb42a03c093858f671a7f463f08ed398600fa5a1460eb1",
+        "rows": 1110
+      }
+    },
+    "coverage": {
+      "EUR": {
+        "first_date": "2022-01-04",
+        "latest_date": "2026-07-17",
+        "official_observations": 1110,
+        "source": "National Bank of Rwanda Excel export"
+      },
+      "KES": {
+        "first_date": "2022-01-04",
+        "latest_date": "2026-07-17",
+        "official_observations": 1110,
+        "source": "National Bank of Rwanda Excel export"
+      },
+      "USD": {
+        "first_date": "2022-01-04",
+        "latest_date": "2026-07-17",
+        "official_observations": 1110,
+        "source": "National Bank of Rwanda Excel export"
+      }
+    },
+    "first_date": "2022-01-04",
+    "latest_date": "2026-07-17",
+    "label_thresholds": {
+      "USD": {
+        "7d_low_max": 0.001406516951591108,
+        "7d_medium_max": 0.002564736702298065,
+        "14d_low_max": 0.0028341812959313817,
+        "14d_medium_max": 0.00519416519715823
+      },
+      "EUR": {
+        "7d_low_max": 0.001331519587732588,
+        "7d_medium_max": 0.008980066603443372,
+        "14d_low_max": 0.0026406734449495595,
+        "14d_medium_max": 0.014495210646774614
+      },
+      "KES": {
+        "7d_low_max": 0.0002453075704211827,
+        "7d_medium_max": 0.002129758222632505,
+        "14d_low_max": 0.0005831382476919611,
+        "14d_medium_max": 0.0042618192138736966
+      }
+    }
+  },
+  "models": {
+    "USD": {
+      "7d": {
+        "best_model": "logistic_regression",
+        "model_file": "risk_model_USD_7d.pkl",
+        "training_rows": 1295,
+        "test_rows": 324,
+        "train_start": "2022-02-03",
+        "train_end": "2025-08-20",
+        "test_start": "2025-08-21",
+        "test_end": "2026-07-10",
+        "class_distribution": {
+          "Low": 795,
+          "Medium": 496,
+          "High": 328
+        },
+        "test_class_distribution": {
+          "Low": 324
+        },
+        "evaluation_note": "Balanced accuracy is unavailable because the chronological test window contains one class.",
+        "evaluations": {
+          "logistic_regression": {
+            "accuracy": 1.0,
+            "balanced_accuracy": null,
+            "f1_macro": 1.0
+          },
+          "random_forest": {
+            "accuracy": 1.0,
+            "balanced_accuracy": null,
+            "f1_macro": 1.0
+          }
+        }
+      },
+      "14d": {
+        "best_model": "logistic_regression",
+        "model_file": "risk_model_USD_14d.pkl",
+        "training_rows": 1289,
+        "test_rows": 323,
+        "train_start": "2022-02-03",
+        "train_end": "2025-08-14",
+        "test_start": "2025-08-15",
+        "test_end": "2026-07-03",
+        "class_distribution": {
+          "Low": 793,
+          "Medium": 490,
+          "High": 329
+        },
+        "test_class_distribution": {
+          "Low": 323
+        },
+        "evaluation_note": "Balanced accuracy is unavailable because the chronological test window contains one class.",
+        "evaluations": {
+          "logistic_regression": {
+            "accuracy": 1.0,
+            "balanced_accuracy": null,
+            "f1_macro": 1.0
+          },
+          "random_forest": {
+            "accuracy": 1.0,
+            "balanced_accuracy": null,
+            "f1_macro": 1.0
+          }
+        }
+      }
+    },
+    "EUR": {
+      "7d": {
+        "best_model": "random_forest",
+        "model_file": "risk_model_EUR_7d.pkl",
+        "training_rows": 1295,
+        "test_rows": 324,
+        "train_start": "2022-02-03",
+        "train_end": "2025-08-20",
+        "test_start": "2025-08-21",
+        "test_end": "2026-07-10",
+        "class_distribution": {
+          "Low": 812,
+          "Medium": 487,
+          "High": 320
+        },
+        "test_class_distribution": {
+          "Low": 177,
+          "Medium": 114,
+          "High": 33
+        },
+        "evaluation_note": null,
+        "evaluations": {
+          "logistic_regression": {
+            "accuracy": 0.2531,
+            "balanced_accuracy": 0.3219,
+            "f1_macro": 0.2133
+          },
+          "random_forest": {
+            "accuracy": 0.5062,
+            "balanced_accuracy": 0.351,
+            "f1_macro": 0.2857
+          }
+        }
+      },
+      "14d": {
+        "best_model": "random_forest",
+        "model_file": "risk_model_EUR_14d.pkl",
+        "training_rows": 1289,
+        "test_rows": 323,
+        "train_start": "2022-02-03",
+        "train_end": "2025-08-14",
+        "test_start": "2025-08-15",
+        "test_end": "2026-07-03",
+        "class_distribution": {
+          "Low": 810,
+          "Medium": 480,
+          "High": 322
+        },
+        "test_class_distribution": {
+          "Low": 202,
+          "Medium": 98,
+          "High": 23
+        },
+        "evaluation_note": null,
+        "evaluations": {
+          "logistic_regression": {
+            "accuracy": 0.6223,
+            "balanced_accuracy": 0.3404,
+            "f1_macro": 0.2881
+          },
+          "random_forest": {
+            "accuracy": 0.5728,
+            "balanced_accuracy": 0.3473,
+            "f1_macro": 0.3313
+          }
+        }
+      }
+    },
+    "KES": {
+      "7d": {
+        "best_model": "random_forest",
+        "model_file": "risk_model_KES_7d.pkl",
+        "training_rows": 1295,
+        "test_rows": 324,
+        "train_start": "2022-02-03",
+        "train_end": "2025-08-20",
+        "test_start": "2025-08-21",
+        "test_end": "2026-07-10",
+        "class_distribution": {
+          "Low": 804,
+          "Medium": 489,
+          "High": 326
+        },
+        "test_class_distribution": {
+          "Medium": 156,
+          "Low": 137,
+          "High": 31
+        },
+        "evaluation_note": null,
+        "evaluations": {
+          "logistic_regression": {
+            "accuracy": 0.4815,
+            "balanced_accuracy": 0.3333,
+            "f1_macro": 0.2167
+          },
+          "random_forest": {
+            "accuracy": 0.463,
+            "balanced_accuracy": 0.4596,
+            "f1_macro": 0.3451
+          }
+        }
+      },
+      "14d": {
+        "best_model": "logistic_regression",
+        "model_file": "risk_model_KES_14d.pkl",
+        "training_rows": 1289,
+        "test_rows": 323,
+        "train_start": "2022-02-03",
+        "train_end": "2025-08-14",
+        "test_start": "2025-08-15",
+        "test_end": "2026-07-03",
+        "class_distribution": {
+          "Low": 804,
+          "Medium": 481,
+          "High": 327
+        },
+        "test_class_distribution": {
+          "Low": 161,
+          "Medium": 142,
+          "High": 20
+        },
+        "evaluation_note": null,
+        "evaluations": {
+          "logistic_regression": {
+            "accuracy": 0.4396,
+            "balanced_accuracy": 0.3333,
+            "f1_macro": 0.2036
+          },
+          "random_forest": {
+            "accuracy": 0.4396,
+            "balanced_accuracy": 0.3333,
+            "f1_macro": 0.2036
+          }
+        }
+      }
+    }
+  }
+}

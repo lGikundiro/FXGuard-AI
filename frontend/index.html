@@ -3,273 +3,607 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FXGuard AI | Decision Support for USD - RWF Payments</title>
+  <title>FXGuard AI — Multi-currency Payment Risk</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css?v=18">
 </head>
 <body>
-  <div class="app">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="logo">FX</div>
-        <div>
-          <h1>FXGuard AI</h1>
-          <p>Clear payment guidance for USD - RWF decisions, built for real importer workflows.</p>
+
+  <!-- ========= SIDEBAR ========= -->
+  <nav class="sidebar" role="navigation" aria-label="Main navigation">
+    <div class="sidebar-header">
+      <div class="wordmark">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+          <rect width="36" height="36" rx="9" fill="#0f0f0f"/>
+          <text
+            x="18" y="23"
+            text-anchor="middle"
+            font-family="Inter, Segoe UI, sans-serif"
+            font-size="14"
+            font-weight="700"
+            letter-spacing="-0.5"
+            fill="#ffffff">fX</text>
+        </svg>
+        <span class="wordmark-text">FXGuard <em>AI</em></span>
+      </div>
+      <p class="sidebar-desc">Multi-currency payment risk, simplified for importers.</p>
+    </div>
+
+    <ul class="nav-list" role="list">
+      <li>
+        <button class="nav-item active" data-screen="dashboard" aria-current="page">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+          Dashboard
+        </button>
+      </li>
+      <li>
+        <button class="nav-item" data-screen="assessment">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 3H3a1 1 0 00-1 1v8a1 1 0 001 1h10a1 1 0 001-1V4a1 1 0 00-1-1z" stroke="currentColor" stroke-width="1.5"/><path d="M5 8h6M5 5.5h3M5 10.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Payment check
+        </button>
+      </li>
+      <li>
+        <button class="nav-item" data-screen="results">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 12l4-4 3 3 5-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Results
+        </button>
+      </li>
+      <li>
+        <button class="nav-item" data-screen="decision">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Recommendations
+        </button>
+      </li>
+      <li>
+        <button class="nav-item" data-screen="feedback">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 2H3a1 1 0 00-1 1v7a1 1 0 001 1h2l3 3 3-3h2a1 1 0 001-1V3a1 1 0 00-1-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          User feedback
+        </button>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="data-status-pill" id="sidebarStatus">
+        <span class="status-dot"></span>
+        <span id="sidebarStatusText">Connecting…</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ========= MAIN ========= -->
+  <main class="main-content" id="main">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <p class="topbar-eyebrow" id="pairEyebrow">USD / RWF · Decision support</p>
+        <h1 class="page-title" id="pageTitle">Dashboard</h1>
+      </div>
+      <div class="topbar-right">
+        <label class="currency-switcher" for="activeCurrency">
+          <span>Currency</span>
+          <select id="activeCurrency" aria-label="Dashboard currency">
+            <option value="USD">USD · US Dollar</option>
+            <option value="EUR">EUR · Euro</option>
+            <option value="KES">KES · Kenyan Shilling</option>
+          </select>
+        </label>
+        <div class="rate-badge" id="rateBadge" aria-live="polite">
+          <span class="rate-badge-label" id="badgeLabel">BNR average rate · USD/RWF</span>
+          <span class="rate-badge-value" id="badgeRate">—</span>
+          <span class="rate-badge-date" id="badgeDate">Loading…</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- STALE DATA BANNER (shown by JS when data is aging/stale) -->
+    <div class="stale-banner hidden" id="staleBanner" role="alert">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3.5M8 11v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <div class="stale-banner-content">
+        <strong>Data freshness</strong>
+        <span id="staleBannerText"></span>
+      </div>
+      <button class="stale-banner-close" id="staleBannerClose" aria-label="Dismiss">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <!-- ============================================================
+         SCREEN: DASHBOARD
+    ============================================================ -->
+    <section class="screen active" id="dashboard" aria-label="Dashboard">
+
+      <!-- KPI row -->
+      <div class="kpi-row" role="list">
+        <div class="kpi-card" role="listitem">
+          <p class="kpi-label" id="kpiRateLabel">Current USD/RWF rate</p>
+          <p class="kpi-value mono" id="kpiRate">—</p>
+          <p class="kpi-sub" id="kpiRateDate">—</p>
+        </div>
+        <div class="kpi-card" role="listitem">
+          <p class="kpi-label">7-day check</p>
+          <p class="kpi-value" id="kpiModel7">Available</p>
+          <p class="kpi-sub">For payments due soon</p>
+        </div>
+        <div class="kpi-card" role="listitem">
+          <p class="kpi-label">14-day check</p>
+          <p class="kpi-value" id="kpiModel14">Available</p>
+          <p class="kpi-sub">For payments due in about two weeks</p>
+        </div>
+        <div class="kpi-card" role="listitem">
+          <p class="kpi-label">Coverage</p>
+          <p class="kpi-value" id="kpiCoverageValue">—</p>
+          <p class="kpi-sub" id="kpiCoverageSub">Loading supported currencies…</p>
         </div>
       </div>
 
-      <div class="nav" aria-label="Primary navigation">
-        <button class="active" data-screen="dashboard">Dashboard</button>
-        <button data-screen="assessment">Payment check</button>
-        <button data-screen="results">Decision view</button>
-        <button data-screen="decision">Action plan</button>
-        <button data-screen="feedback">Participant feedback</button>
-      </div>
-
-      <div class="side-card">
-        <h3>Designed to reduce uncertainty</h3>
-        <p>The interface surfaces the current rate, what it may mean for the payment, and what action a person can take next.</p>
-      </div>
-    </aside>
-
-    <main class="main">
-      <div class="shell">
-        <div class="topbar">
-          <div class="title">
-            <p class="eyebrow">USD - RWF decision support</p>
-            <h2 id="pageTitle">Dashboard</h2>
-            <p id="pageSubtitle">A compact view of the latest rate, recent movement, and the next step if a USD payment is coming up.</p>
-            <p id="pageSubtitleEmphasis" class="emphasis">It is here to help someone decide whether to wait, set aside more, or move ahead with confidence.</p>
+      <!-- RWF rate converter -->
+      <div class="converter-bar">
+        <div class="converter-inner">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1 8h14M10 4l4 4-4 4M6 12L2 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="converter-label">Live converter</span>
+          <div class="converter-fields">
+            <div class="converter-field">
+              <span class="converter-prefix" id="convCurrencyPrefix">USD</span>
+              <input id="convForeign" type="number" min="0" value="1000" inputmode="decimal" autocomplete="off" aria-label="Amount in selected currency" />
+            </div>
+            <span class="converter-eq">=</span>
+            <div class="converter-field">
+              <span class="converter-prefix">RWF</span>
+              <input id="convRWF" type="number" min="0" inputmode="decimal" autocomplete="off" aria-label="Amount in RWF" />
+            </div>
           </div>
-          <div class="badge" id="dataBadge">Loading recent rate data...</div>
+          <span class="converter-rate-note" id="convRateNote">at — RWF/USD</span>
         </div>
+      </div>
 
-        <section class="screen active" id="dashboard">
-          <div class="hero-panel">
-            <div class="hero-copy">
-              <div class="section-label">At a glance</div>
-              <h3>See whether this payment still feels safe.</h3>
-              <div class="hero-actions">
-                <button class="btn" id="heroCheckBtn">Check a payment</button>
-                <button class="btn secondary" data-go-screen="assessment">Review the assessment form</button>
-              </div>
-              <div class="hero-feeds">
-                <div class="feed">
-                  <small>Latest rate</small>
-                  <strong id="latestRate">—</strong>
-                  <span id="latestDate">Loading...</span>
-                </div>
-                <div class="feed">
-                  <small>7-day model</small>
-                  <strong id="model7">Ready</strong>
-                  <span>Short-term pressure check.</span>
-                </div>
-                <div class="feed">
-                  <small>14-day model</small>
-                  <strong id="model14">Ready</strong>
-                  <span>Longer planning horizon.</span>
-                </div>
-              </div>
+      <!-- Chart + quick form row -->
+      <div class="dashboard-body">
+
+        <!-- Chart panel -->
+        <div class="panel panel-chart">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title" id="chartTitle">USD / RWF — rate trend</h2>
+              <p class="panel-sub" id="chartDescription">BNR reference rates. Higher values mean each USD costs more RWF.</p>
             </div>
-
-            <div class="hero-aside">
-              <div class="aside-note">
-                <h4>What matters first</h4>
-                  <p>The page starts with the rate, the payment outlook, and a clear next step.</p>
+            <div class="chart-head-right">
+              <div class="chart-controls">
+                <button class="chart-range-btn" data-days="90">90d</button>
+                <button class="chart-range-btn active" data-days="180">180d</button>
+                <button class="chart-range-btn" data-days="365">1y</button>
+                <button class="chart-range-btn" data-days="1461">4y</button>
               </div>
-              <ul class="mini-list">
-                <li><span>Currency pair</span><strong>USD - RWF</strong></li>
-                <li><span>Decision horizon</span><strong>7 or 14 days</strong></li>
-                <li><span>Output focus</span><strong>Action, not jargon</strong></li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="grid stats mt-18">
-            <div class="card stat"><small>Currency pair</small><strong>USD - RWF</strong><span>Built for USD supplier payments and budget planning.</span></div>
-            <div class="card stat"><small>Latest rate</small><strong id="latestRateStat">—</strong><span id="latestDateStat">Loading...</span></div>
-            <div class="card stat"><small>Short-term view</small><strong id="model7Stat">Ready</strong><span>The 7-day model is loaded and available.</span></div>
-            <div class="card stat"><small>Planning view</small><strong id="model14Stat">Ready</strong><span>The 14-day model is loaded and available.</span></div>
-          </div>
-
-          <div class="grid two-col mt-18">
-            <div class="card">
-              <div class="section-label">Rate movement</div>
-              <h3 class="section-title">Recent USD - RWF trend</h3>
-              <p class="section-copy">A quick read of how the USD cost has moved recently. Higher rates mean a USD payment needs more RWF.</p>
-              <div class="chart-summary" aria-label="Recent rate summary">
-                <div>
+              <div class="chart-stats" id="chartStats">
+                <div class="chart-stat">
                   <span>Latest</span>
-                  <strong id="trendLatest">--</strong>
+                  <strong id="statLatest">—</strong>
                 </div>
-                <div>
-                  <span>180-day change</span>
-                  <strong id="trendChange">--</strong>
+                <div class="chart-stat">
+                  <span>Change</span>
+                  <strong id="statChange">—</strong>
                 </div>
-                <div>
-                  <span>Direction</span>
-                  <strong id="trendDirection">--</strong>
+                <div class="chart-stat">
+                  <span>Trend</span>
+                  <strong id="statTrend">—</strong>
                 </div>
               </div>
-              <div class="chart-frame">
-                <canvas id="historyChart" height="180"></canvas>
-              </div>
-            </div>
-            <div class="card soft">
-              <div class="section-label">Quick action</div>
-              <h3 class="section-title">Check a payment in seconds</h3>
-              <p class="section-copy">Use a hypothetical invoice amount if you are testing. The point is to see whether the payment feels stable, watchful, or risky.</p>
-              <div class="form">
-                <div><label>Supplier invoice amount (USD)</label><input id="quickAmount" type="number" value="10000" min="1" /></div>
-                <div><label>Look ahead</label><div class="toggle"><button class="selected" data-horizon="7">7 days</button><button data-horizon="14">14 days</button></div></div>
-                <button class="btn full" id="quickAnalyze">Check payment outlook</button>
-              </div>
             </div>
           </div>
+          <div class="chart-wrap">
+            <canvas id="historyChart" aria-label="Selected currency to RWF rate chart" role="img"></canvas>
+          </div>
+        </div>
 
-          <div class="grid two-col mt-18">
-            <div class="card">
-              <div class="section-label">Why this exists</div>
-              <h3 class="section-title">A simple question, answered clearly</h3>
-              <p class="section-copy">If a supplier payment is coming up, the app helps the user decide whether to stay on course, wait a bit, or budget more room.</p>
-              <div class="currency-card">
-                <div>
-                  <h3>Built for a real decision moment</h3>
-                  <p>The result is framed as practical guidance so it feels like a tool someone can use, not a report they have to interpret.</p>
-                </div>
-                <span class="risk-pill risk-Medium">Guidance</span>
+        <!-- Quick-check form -->
+        <div class="panel panel-form">
+          <h2 class="panel-title">Quick payment check</h2>
+          <p class="panel-sub">Get a risk read in seconds. Use a hypothetical amount if you are testing.</p>
+          <div class="form-stack">
+            <div class="field">
+              <label for="quickAmount" id="quickAmountLabel">Invoice amount (USD)</label>
+              <div class="input-wrap">
+                <span class="input-prefix" id="quickAmountPrefix">$</span>
+                <input id="quickAmount" type="number" value="10000" min="1" inputmode="numeric" autocomplete="off" />
               </div>
             </div>
-            <div class="card">
-              <div class="section-label">Trust and clarity</div>
-              <h3 class="section-title">What the result tells you</h3>
-              <p class="section-copy">The app exposes the key signals so the answer feels explainable, not magical.</p>
-              <div id="dashboardHints" class="mini-list">
-                <li><span>Risk level</span><strong>How exposed the payment looks</strong></li>
-                <li><span>Confidence</span><strong>How certain the model feels</strong></li>
-                <li><span>Recommendations</span><strong>What to do next</strong></li>
+            <div class="field">
+              <label>Horizon</label>
+              <div class="seg-control" role="group" aria-label="Prediction horizon">
+                <button class="seg-btn active" data-horizon="7">7 days</button>
+                <button class="seg-btn" data-horizon="14">14 days</button>
               </div>
             </div>
-          </div>
-        </section>
-
-        <section class="screen" id="assessment">
-          <div class="grid two-col">
-            <div class="card">
-              <div class="section-label">Assessment</div>
-              <h3 class="section-title">Check a payment before you commit</h3>
-              <p class="section-copy">Enter the amount and the timing, then see whether the payment looks calm, watchful, or exposed.</p>
-              <div class="form">
-                <div><label>Currency</label><select id="currency"><option value="USD">USD payment</option></select></div>
-                <div><label>Payment amount</label><input id="amount" type="number" min="1" value="10000"></div>
-                <div><label>How far ahead?</label><div class="toggle"><button class="selected" data-horizon-main="7">7 days</button><button data-horizon-main="14">14 days</button></div></div>
-                <div><label>Extra amount to set aside (optional)</label><input id="margin" type="number" min="0" max="100" placeholder="e.g. 20"></div>
-                <button class="btn" id="analyzeBtn">Check payment outlook</button>
-              </div>
-            </div>
-            <div class="card soft">
-              <div class="section-label">User guidance</div>
-              <h3 class="section-title">A few things to keep in mind</h3>
-              <p class="section-copy">Use a hypothetical amount during testing. The goal is to make the next decision easier, not to replace financial judgment.</p>
-              <div class="recommendation">If the payment is large or the due date is close, it may be worth keeping a little extra room in the budget.</div>
-            </div>
-          </div>
-        </section>
-
-        <section class="screen" id="results">
-          <div id="emptyResult" class="card">
-            <div class="section-label">No result yet</div>
-            <h3 class="section-title">Run a payment check first</h3>
-            <p class="section-copy">The result view is where the app translates the model output into an action a person can actually use.</p>
-            <button class="btn" data-go-screen="assessment">Go to assessment</button>
+            <button class="btn-primary" id="quickAnalyze">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 10.5l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              Check payment outlook
+            </button>
           </div>
 
-          <div id="resultContent" class="hidden">
-            <div class="result-hero">
-              <div class="big-risk"><small>Risk level</small><h3 id="riskLevel">—</h3><p id="riskMeaning">—</p></div>
-              <div class="big-risk"><small>Current cost</small><h3 id="currentCost">—</h3><p id="currentRateText">—</p></div>
-              <div class="big-risk"><small>Possible extra cost</small><h3 id="extraCost">—</h3><p id="confidenceText">—</p></div>
-            </div>
-
-            <div class="grid two-col mt-18">
-              <div class="card soft">
-                <div class="section-label">Next steps</div>
-                <h3 class="section-title">Recommendations in plain language</h3>
-                <p class="section-copy">These are meant to be the most useful actions for someone handling the payment, not a list of model features.</p>
-                <div id="resultRecommendations"></div>
-                <button class="btn mt-14" data-go-screen="decision">View action plan</button>
-              </div>
-              <div class="card">
-                <div class="section-label">Why this result</div>
-                <h3 class="section-title">What influenced the outcome</h3>
-                <p class="section-copy">The app exposes the key signals so the answer feels explainable, not magical.</p>
-                <div id="drivers"></div>
-              </div>
-            </div>
-
-            <div class="card mt-18">
-              <div class="section-label">Model shape</div>
-              <h3 class="section-title">How the outlook is split</h3>
-              <p class="section-copy">This chart shows the model's distribution across Low, Medium, and High risk. It is useful for understanding whether the answer was decisive or borderline.</p>
-              <canvas id="probChart" height="150"></canvas>
-            </div>
+          <!-- About box -->
+          <div class="about-box">
+            <p class="about-title">What this tells you</p>
+            <ul class="about-list">
+              <li>Risk level — Low, Medium, or High</li>
+              <li>Cost in RWF at today's rate</li>
+              <li>Possible extra cost if rate moves</li>
+              <li>Recommendations</li>
+            </ul>
           </div>
-        </section>
-
-        <section class="screen" id="decision">
-          <div id="emptyDecision" class="card">
-            <div class="section-label">Action plan</div>
-            <h3 class="section-title">No recommendations yet</h3>
-            <p class="section-copy">Run a payment outlook first and this section will turn the result into a simple plan.</p>
-          </div>
-
-          <div id="decisionContent" class="hidden">
-            <div class="grid two-col">
-              <div class="card">
-                <div class="section-label">Recommended actions</div>
-                <h3 class="section-title">What to do next</h3>
-                <div id="decisionRecommendations"></div>
-              </div>
-              <div class="card soft">
-                <div class="section-label">Simple estimate</div>
-                <h3 class="section-title">Scenario summary</h3>
-                <table>
-                  <tbody id="scenarioRows"></tbody>
-                </table>
-                <p class="disclaimer" id="disclaimer"></p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="screen" id="feedback">
-          <div class="card">
-            <div class="section-label">Feedback</div>
-            <h3 class="section-title">Participant feedback form</h3>
-            <p class="section-copy">Please share your feedback after using FXGuard AI. Responses are saved directly in the Google response spreadsheet connected to this form.</p>
-            <div class="hero-actions feedback-actions">
-              <a class="btn secondary" href="https://docs.google.com/forms/d/e/1FAIpQLSd3E97VFGFl7v-9ojSAAmPc4RkE-30tf9YCJ_XUhPuw8JFbBg/viewform?usp=sharing&ouid=104016241045115446299" target="_blank" rel="noopener">Open form in new tab</a>
-            </div>
-            <div class="feedback-embed">
-              <iframe
-                title="FXGuard AI User feedback"
-                src="https://docs.google.com/forms/d/e/1FAIpQLSd3E97VFGFl7v-9ojSAAmPc4RkE-30tf9YCJ_XUhPuw8JFbBg/viewform?embedded=true"
-                loading="lazy">
-                Loading feedback form...
-              </iframe>
-            </div>
-          </div>
-        </section>
+        </div>
       </div>
-    </main>
+
+      <!-- How it works strip -->
+      <div class="how-strip">
+        <div class="how-step">
+          <span class="how-num">01</span>
+          <div>
+            <p class="how-title">Enter a payment</p>
+            <p class="how-body">Choose USD, EUR, or KES and enter the payment amount.</p>
+          </div>
+        </div>
+        <div class="how-divider" aria-hidden="true"></div>
+        <div class="how-step">
+          <span class="how-num">02</span>
+          <div>
+            <p class="how-title">Recent rates are compared</p>
+            <p class="how-body">The app compares recent changes with more than four years of BNR records.</p>
+          </div>
+        </div>
+        <div class="how-divider" aria-hidden="true"></div>
+        <div class="how-step">
+          <span class="how-num">03</span>
+          <div>
+            <p class="how-title">You receive a planning summary</p>
+            <p class="how-body">See the risk level, estimated cost, and information behind the result.</p>
+          </div>
+        </div>
+        <div class="how-divider" aria-hidden="true"></div>
+        <div class="how-step">
+          <span class="how-num">04</span>
+          <div>
+            <p class="how-title">Review your options</p>
+            <p class="how-body">Use the result as one input when considering payment timing, available funds, and supplier terms.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent checks (populated from localStorage) -->
+      <div class="recent-checks hidden" id="recentChecks">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">Recent checks</h2>
+            </div>
+            <button class="btn-ghost" id="clearHistory">Clear history</button>
+          </div>
+          <div class="table-scroll">
+            <table class="data-table" aria-label="Recent payment checks">
+              <thead>
+                <tr>
+                  <th>Checked</th>
+                  <th>Amount</th>
+                  <th>Horizon</th>
+                  <th>Risk</th>
+                  <th>Cost (RWF)</th>
+                  <th>Extra cost (RWF)</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="recentChecksBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ============================================================
+         SCREEN: ASSESSMENT
+    ============================================================ -->
+    <section class="screen" id="assessment" aria-label="Payment check">
+      <div class="two-col">
+
+        <div class="panel">
+          <h2 class="panel-title">Payment details</h2>
+          <p class="panel-sub">Enter the supplier invoice and choose your planning horizon.</p>
+          <div class="form-stack">
+            <div class="field">
+              <label for="currency">Currency</label>
+              <select id="currency">
+                <option value="USD">USD — US Dollar</option>
+                <option value="EUR">EUR — Euro</option>
+                <option value="KES">KES — Kenyan Shilling</option>
+              </select>
+              <span class="field-note">Rates are expressed as RWF per unit of the selected currency.</span>
+            </div>
+            <div class="field">
+              <label for="amount" id="amountLabel">Invoice amount (USD)</label>
+              <div class="input-wrap">
+                <span class="input-prefix" id="amountPrefix">$</span>
+                <input id="amount" type="number" min="1" value="10000" inputmode="numeric" autocomplete="off" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Planning horizon</label>
+              <div class="seg-control" role="group" aria-label="Main prediction horizon">
+                <button class="seg-btn active" data-horizon-main="7">7 days</button>
+                <button class="seg-btn" data-horizon-main="14">14 days</button>
+              </div>
+            </div>
+            <button class="btn-primary" id="analyzeBtn">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 10.5l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              Run risk assessment
+            </button>
+          </div>
+        </div>
+
+        <div class="panel panel-soft">
+          <h2 class="panel-title">Before you run this</h2>
+          <p class="panel-sub">A few things worth keeping in mind when interpreting the result.</p>
+          <ul class="tip-list">
+            <li>
+              <span class="tip-icon tip-amber">!</span>
+              <div>
+                <p class="tip-title">The result is decision support, not a forecast</p>
+                <p class="tip-body">The app compares recent rate changes with past BNR records. It cannot know the exact future rate.</p>
+              </div>
+            </li>
+            <li>
+              <span class="tip-icon tip-green">✓</span>
+              <div>
+                <p class="tip-title">Large or time-sensitive payments benefit most</p>
+                <p class="tip-body">The higher the invoice or the tighter the margin, the more the risk read matters.</p>
+              </div>
+            </li>
+          </ul>
+          <div class="info-row">
+            <span>Currency pair</span><strong id="assessmentPair">USD / RWF</strong>
+          </div>
+          <div class="info-row">
+            <span>Data source</span><strong id="assessmentSource">BNR exchange rates</strong>
+          </div>
+          <div class="info-row">
+            <span>How the result is prepared</span><strong>Recent rates compared with past BNR records</strong>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SCREEN: RESULTS
+    ============================================================ -->
+    <section class="screen" id="results" aria-label="Risk results">
+
+      <!-- Export bar — always visible at top of Results screen -->
+      <div class="export-bar">
+        <div class="export-bar-left">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 1v9M4 6l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Download or print your risk assessment result</span>
+        </div>
+        <div class="export-btn-group">
+          <button class="btn-export-main btn-export-secondary" id="downloadExcelBtn">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M6.5 1v7M3 5l3.5 3.5L10 5M1 11h11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Download Excel
+          </button>
+          <button class="btn-export-main" id="downloadHtmlBtn">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M6.5 1v7M3 5l3.5 3.5L10 5M1 11h11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Download Report
+          </button>
+          <button class="btn-export-main btn-export-secondary" id="printBtn">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M3 4V1h7v3M3 9H1V5h11v4h-2M3 8h7v4H3V8z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+            Print / PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div id="emptyResult" class="empty-state">
+        <div class="empty-icon" aria-hidden="true">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.5" opacity=".3"/><path d="M13 20h14M20 13v14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".5"/></svg>
+        </div>
+        <h2>No result yet</h2>
+        <p>Run a payment check from the Dashboard or Payment check screen first.</p>
+        <button class="btn-secondary" data-go-screen="assessment">Go to payment check</button>
+      </div>
+
+      <!-- Result content -->
+      <div id="resultContent" class="hidden">
+
+        <!-- Risk summary row -->
+        <div class="result-summary">
+          <div class="summary-card summary-risk">
+            <p class="summary-label">
+              Risk level
+              <button class="info-btn" id="riskInfoBtn" aria-label="What do risk levels mean?" title="What do these levels mean?">?</button>
+            </p>
+            <p class="summary-value" id="riskLevel">—</p>
+            <p class="summary-desc" id="riskMeaning">—</p>
+          </div>
+          <div class="summary-card">
+            <p class="summary-label">Cost at today's rate</p>
+            <p class="summary-value mono" id="currentCost">—</p>
+            <p class="summary-desc" id="currentRateText">—</p>
+          </div>
+          <div class="summary-card">
+            <p class="summary-label">Possible added cost</p>
+            <p class="summary-value mono" id="extraCost">—</p>
+            <p class="summary-desc" id="confidenceText">—</p>
+          </div>
+        </div>
+
+        <div class="two-col mt-20">
+
+          <!-- Recommendations -->
+          <div class="panel">
+            <h2 class="panel-title">Recommendations</h2>
+            <p class="panel-sub">Practical steps to consider for this payment.</p>
+            <div id="resultRecommendations" class="rec-list"></div>
+            <button class="btn-secondary mt-16" data-go-screen="decision">View all recommendations</button>
+          </div>
+
+          <!-- Key drivers -->
+          <div class="panel panel-soft">
+            <h2 class="panel-title">What this result is based on</h2>
+            <p class="panel-sub">Summary of recent exchange-rate changes.</p>
+            <div id="drivers" class="driver-table"></div>
+          </div>
+
+        </div>
+
+        <!-- Probability chart -->
+        <div class="panel mt-20">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">How strongly each risk level is supported</h2>
+              <p class="panel-sub">How the recent rate information points toward Low, Medium, or High risk.</p>
+            </div>
+          </div>
+          <div class="prob-chart-wrap">
+            <canvas id="probChart" aria-label="Support for Low, Medium, and High risk levels" role="img"></canvas>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SCREEN: RECOMMENDATIONS
+    ============================================================ -->
+    <section class="screen" id="decision" aria-label="Recommendations">
+
+      <div id="emptyDecision" class="empty-state">
+        <div class="empty-icon" aria-hidden="true">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.5" opacity=".3"/><path d="M13 20h14M20 13v14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".5"/></svg>
+        </div>
+        <h2>No recommendations yet</h2>
+        <p>Run a payment check first, then come back here for recommendations.</p>
+        <button class="btn-secondary" data-go-screen="assessment">Run assessment</button>
+      </div>
+
+      <div id="decisionContent" class="hidden">
+        <div class="two-col">
+
+          <div class="panel">
+            <h2 class="panel-title">Recommendations</h2>
+            <p class="panel-sub">Practical steps based on the recent exchange-rate information.</p>
+            <div id="decisionRecommendations" class="rec-list"></div>
+          </div>
+
+          <div class="panel panel-soft">
+            <h2 class="panel-title">Payment scenario</h2>
+            <p class="panel-sub">A simple cost estimate using current market data.</p>
+            <table class="scenario-table" aria-label="Payment scenario breakdown">
+              <tbody id="scenarioRows"></tbody>
+            </table>
+            <p class="disclaimer-text" id="disclaimer"></p>
+          </div>
+
+        </div>
+
+        <aside class="decision-disclaimer" role="note" aria-labelledby="decisionDisclaimerTitle">
+          <span class="decision-disclaimer-icon" aria-hidden="true">i</span>
+          <div>
+            <h2 class="decision-disclaimer-title" id="decisionDisclaimerTitle">This is future-payment planning support — not financial advice</h2>
+            <p class="decision-disclaimer-body">
+              FXGuard AI helps you consider exchange-rate risk when planning future supplier payments.
+              Its results are estimates, not guarantees or professional financial advice. Consider your
+              business circumstances and seek qualified advice before making major financial decisions.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SCREEN: FEEDBACK
+    ============================================================ -->
+    <section class="screen" id="feedback" aria-label="Participant feedback">
+      <div class="panel">
+        <div class="panel-head feedback-head">
+          <div>
+            <h2 class="panel-title">Participant feedback</h2>
+            <p class="panel-sub">Please share your experience after using FXGuard AI. Responses are saved directly to the connected Google Sheet.</p>
+          </div>
+          <a class="btn-secondary"
+             href="https://docs.google.com/forms/d/e/1FAIpQLSd3E97VFGFl7v-9ojSAAmPc4RkE-30tf9YCJ_XUhPuw8JFbBg/viewform?usp=sharing&ouid=104016241045115446299"
+             target="_blank"
+             rel="noopener noreferrer">
+            Open in new tab
+          </a>
+        </div>
+        <div class="feedback-frame">
+          <iframe
+            title="FXGuard AI User feedback"
+            src="https://docs.google.com/forms/d/e/1FAIpQLSd3E97VFGFl7v-9ojSAAmPc4RkE-30tf9YCJ_XUhPuw8JFbBg/viewform?embedded=true"
+            loading="lazy"
+            aria-label="FXGuard AI feedback form">
+            Loading feedback form…
+          </iframe>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Risk definitions modal -->
+  <div class="modal-overlay hidden" id="riskModal" role="dialog" aria-modal="true" aria-labelledby="riskModalTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="riskModalTitle">Understanding risk levels</h2>
+        <button class="modal-close" id="riskModalClose" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-intro">FXGuard AI compares recent exchange-rate changes with past BNR records, then groups the payment into Low, Medium, or High risk.</p>
+        <div class="risk-def risk-def-low">
+          <div class="risk-def-head">
+            <span class="risk-pill Low">Low</span>
+            <p>The recent rate has stayed within its usual range.</p>
+          </div>
+          <ul>
+            <li>Your quoted price is unlikely to need adjustment for this payment window.</li>
+            <li>Continue monitoring the rate normally as the payment date approaches.</li>
+            <li>No immediate action required — standard payment timing is fine.</li>
+          </ul>
+        </div>
+        <div class="risk-def risk-def-medium">
+          <div class="risk-def-head">
+            <span class="risk-pill Medium">Medium</span>
+            <p>The recent changes suggest this payment could become moderately more expensive.</p>
+          </div>
+          <ul>
+            <li>Consider building a small buffer (5–10%) into your cost estimate.</li>
+            <li>Check the rate again closer to the payment date before confirming quotes.</li>
+            <li>If the invoice is large, a partial early payment may reduce exposure.</li>
+          </ul>
+        </div>
+        <div class="risk-def risk-def-high">
+          <div class="risk-def-head">
+            <span class="risk-pill High">High</span>
+            <p>Recent changes suggest this payment could become noticeably more expensive.</p>
+          </div>
+          <ul>
+            <li>Review payment timing — paying earlier (if cash flow allows) may reduce cost.</li>
+            <li>Increase your margin buffer or revise supplier quotes before committing.</li>
+            <li>Consider splitting the payment to reduce single-exposure risk.</li>
+          </ul>
+        </div>
+        <p class="modal-disclaimer">These risk levels are for planning support only. They do not guarantee what the exchange rate will do next.</p>
+      </div>
+    </div>
   </div>
 
-  <div class="toast" id="toast"></div>
-
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=20"></script>
 </body>
 </html>
-

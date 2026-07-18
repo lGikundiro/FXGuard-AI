@@ -5,6 +5,7 @@ import os
 import urllib.error
 import urllib.request
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 from typing import List, Optional
 
@@ -12,9 +13,20 @@ import joblib
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font, PatternFill
 from pydantic import BaseModel, Field
+
+from backend.app.rates import (
+    CURRENCY_INFO,
+    SUPPORTED_CURRENCIES,
+    combined_daily,
+    latest_feature_row as latest_currency_feature_row,
+    provider_status,
+    validate_currency,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data" / "processed"
@@ -33,8 +45,8 @@ FEATURE_COLUMNS = [
 
 app = FastAPI(
     title="FXGuard AI API",
-    description="USD/RWF exchange-rate risk forecasting and decision-support API for Rwanda-based importers.",
-    version="1.0.0",
+    description="Multi-currency exchange-rate risk forecasting and decision support for Rwanda-based importers.",
+    version="2.0.0",
 )
 
 app.add_middleware(
@@ -50,10 +62,9 @@ if FRONTEND_DIR.exists():
 
 
 class RiskRequest(BaseModel):
-    currency: str = Field(default="USD", description="Currency code. MVP supports USD only.")
-    amount: float = Field(default=10000, gt=0, description="Supplier invoice amount in USD.")
+    currency: str = Field(default="USD", description="Invoice currency: USD, EUR, or KES.")
+    amount: float = Field(default=10000, gt=0, description="Supplier invoice amount in the selected currency.")
     horizon: int = Field(default=7, description="Prediction horizon in days: 7 or 14.")
-    margin_percent: Optional[float] = Field(default=None, ge=0, le=100, description="Optional target margin.")
 
 
 class FeedbackRequest(BaseModel):
@@ -121,12 +132,16 @@ def append_feedback_to_google_sheet(feedback_data: dict) -> dict:
     return {"enabled": True, "status": "unknown_response"}
 
 
-def load_model(horizon: int):
+def load_model(currency: str, horizon: int):
+    try:
+        currency = validate_currency(currency)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if horizon not in (7, 14):
         raise HTTPException(status_code=400, detail="Horizon must be 7 or 14 days.")
-    key = f"model_{horizon}d"
+    key = f"model_{currency}_{horizon}d"
     if key not in _cache:
-        path = MODEL_DIR / f"risk_model_{horizon}d.pkl"
+        path = MODEL_DIR / f"risk_model_{currency}_{horizon}d.pkl"
         if not path.exists():
             raise HTTPException(status_code=500, detail=f"Model not found: {path}")
         _cache[key] = joblib.load(path)
@@ -163,23 +178,24 @@ def latest_feature_row():
     return required.iloc[-1]
 
 
-def risk_guidance(risk: str) -> List[str]:
+def risk_guidance(risk: str, currency: str = "USD") -> List[str]:
+    pair = f"{currency}/RWF"
     if risk == "High":
         return [
-            "Consider paying the supplier earlier if cash flow allows.",
-            "Consider splitting the payment to reduce exposure.",
-            "Review selling prices or add a margin buffer before confirming quotes.",
+            "If funds are available, consider paying the supplier earlier so a rate increase has less effect.",
+            "If the invoice is large, consider splitting it into smaller payments instead of paying it all at once.",
+            "Set aside extra money or adjust your selling price before confirming customer quotes.",
         ]
     if risk == "Medium":
         return [
-            "Monitor the USD/RWF rate closely before the payment date.",
-            "Review pricing assumptions and prepare a small margin buffer.",
-            "Consider partial payment if the invoice is large.",
+            f"Check the {pair} rate again before the payment date.",
+            "Set aside a small extra amount in case the foreign currency becomes more expensive.",
+            "If the invoice is large, consider paying part of it earlier.",
         ]
     return [
-        "Risk is currently low; continue monitoring normally.",
-        "The current payment timing appears manageable based on recent signals.",
-        "Review again if the payment date is delayed.",
+        "Recent rates look fairly stable, but keep checking as the payment date approaches.",
+        "The planned payment date appears reasonable based on recent rate changes.",
+        "Check the rate again if the payment is delayed.",
     ]
 
 
@@ -192,9 +208,12 @@ def risk_pressure_rate(risk: str, horizon: int) -> float:
     return 0.0025 if horizon == 7 else 0.005
 
 
-def model_predict(horizon: int):
-    model = load_model(horizon)
-    row = latest_feature_row()
+def model_predict(currency: str, horizon: int):
+    model = load_model(currency, horizon)
+    try:
+        row = latest_currency_feature_row(currency, FEATURE_COLUMNS)
+    except (RuntimeError, FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     X = pd.DataFrame([row[FEATURE_COLUMNS].astype(float).to_dict()])
     pred = str(model.predict(X)[0])
 
@@ -234,58 +253,104 @@ def home():
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "project": "FXGuard AI", "currency_pair": "USD/RWF"}
+    return {
+        "status": "ok",
+        "project": "FXGuard AI",
+        "currencies": list(SUPPORTED_CURRENCIES),
+        "pairs": [f"{currency}/RWF" for currency in SUPPORTED_CURRENCIES],
+        "rate_provider": provider_status(),
+    }
+
+
+@app.get("/api/currencies")
+def currencies():
+    return {
+        "base_currency": "RWF",
+        "currencies": [
+            {"code": code, "pair": f"{code}/RWF", **details}
+            for code, details in CURRENCY_INFO.items()
+        ],
+    }
 
 
 @app.get("/api/latest-rate")
-def latest_rate():
-    df = load_daily_calendar()
+def latest_rate(currency: str = "USD"):
+    try:
+        code = validate_currency(currency)
+        df = combined_daily(code)
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     row = df.iloc[-1]
     return {
         "date": str(row["date"].date()),
-        "currency": row["currency"],
+        "currency": code,
+        "currency_name": CURRENCY_INFO[code]["name"],
+        "currency_symbol": CURRENCY_INFO[code]["symbol"],
+        "pair": f"{code}/RWF",
         "buying_rate": round(float(row["buying_rate"]), 4),
         "selling_rate": round(float(row["selling_rate"]), 4),
         "mid_rate": round(float(row["mid_rate"]), 4),
         "is_official_observation": bool(row.get("is_official_observation", 1)),
+        "source": row.get("source", "National Bank of Rwanda Excel export"),
+        "rate_type": row.get("rate_type", "BNR buying/average/selling rates"),
+        "provider_status": provider_status(),
+    }
+
+
+@app.get("/api/latest-rates")
+def latest_rates():
+    return {
+        "base_currency": "RWF",
+        "rates": [latest_rate(currency) for currency in SUPPORTED_CURRENCIES],
     }
 
 
 @app.get("/api/data-freshness")
-def data_freshness():
-    daily = load_daily_calendar()
-    features = load_features()
+def data_freshness(currency: str = "USD"):
+    try:
+        code = validate_currency(currency)
+        daily = combined_daily(code)
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     latest_rate_date = daily["date"].max().date()
-    latest_feature_date = features["date"].max().date()
+    latest_feature_date = latest_currency_feature_row(code, FEATURE_COLUMNS)["date"].date()
     today = datetime.now().date()
     days_since_rate = max((today - latest_rate_date).days, 0)
     days_since_features = max((today - latest_feature_date).days, 0)
 
-    if days_since_rate <= 2:
+    if days_since_rate <= 5:
         status = "fresh"
-    elif days_since_rate <= 14:
+    elif days_since_rate <= 30:
         status = "aging"
     else:
         status = "stale"
 
     return {
         "status": status,
+        "currency": code,
+        "pair": f"{code}/RWF",
         "today": str(today),
         "latest_rate_date": str(latest_rate_date),
         "latest_feature_date": str(latest_feature_date),
         "days_since_latest_rate": days_since_rate,
         "days_since_latest_features": days_since_features,
-        "source": "Local prepared BNR dataset",
-        "note": "Refresh the processed datasets and retrain models when new official rates are available.",
+        "source": str(daily.iloc[-1].get("source", "National Bank of Rwanda Excel export")),
+        "provider_status": provider_status(),
+        "note": "Rates come from the latest manually imported official BNR Excel exports; import newer exports to refresh them.",
     }
 
 
 @app.get("/api/history")
-def history(days: int = 90):
-    df = load_daily_calendar().tail(max(7, min(days, 1461)))
+def history(days: int = 90, currency: str = "USD"):
+    try:
+        code = validate_currency(currency)
+        df = combined_daily(code).tail(max(7, min(days, 1461)))
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {
-        "currency": "USD",
-        "pair": "USD/RWF",
+        "currency": code,
+        "pair": f"{code}/RWF",
+        "source": str(df.iloc[-1].get("source", "BNR reference-rate dataset")),
         "points": [
             {"date": str(r.date.date()), "mid_rate": round(float(r.mid_rate), 4)}
             for r in df.itertuples()
@@ -295,17 +360,19 @@ def history(days: int = 90):
 
 @app.get("/api/model-metadata")
 def model_metadata():
-    return load_json(MODEL_DIR / "model_metadata.json")
+    return load_json(MODEL_DIR / "multicurrency_model_metadata.json")
 
 
 @app.post("/api/predict-risk")
 def predict_risk(req: RiskRequest):
-    if req.currency.upper() != "USD":
-        raise HTTPException(status_code=400, detail="This MVP supports USD/RWF only. Other currencies are future enhancements.")
+    try:
+        currency = validate_currency(req.currency)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if req.horizon not in (7, 14):
         raise HTTPException(status_code=400, detail="Horizon must be 7 or 14 days.")
 
-    risk, confidence, predicted_probability, top_probability_label, probabilities, row = model_predict(req.horizon)
+    risk, confidence, predicted_probability, top_probability_label, probabilities, row = model_predict(currency, req.horizon)
     current_rate = float(row["mid_rate"])
     current_cost = req.amount * current_rate
     pressure_rate = risk_pressure_rate(risk, req.horizon)
@@ -313,10 +380,14 @@ def predict_risk(req: RiskRequest):
     suggested_buffer = current_cost * max(pressure_rate, 0.0025)
 
     return {
-        "currency": "USD",
-        "pair": "USD/RWF",
+        "currency": currency,
+        "currency_name": CURRENCY_INFO[currency]["name"],
+        "currency_symbol": CURRENCY_INFO[currency]["symbol"],
+        "pair": f"{currency}/RWF",
         "horizon_days": req.horizon,
-        "amount_usd": req.amount,
+        "amount": req.amount,
+        "amount_currency": req.amount,
+        "amount_usd": req.amount if currency == "USD" else None,
         "analysis_date": str(row["date"].date()),
         "current_rate": round(current_rate, 4),
         "current_cost_rwf": round(current_cost, 2),
@@ -342,9 +413,131 @@ def predict_risk(req: RiskRequest):
             "spread_pct": round(float(row["spread_pct"]), 6),
             "depreciation_days_7d": int(row["depreciation_days_7d"]),
         },
-        "recommendations": risk_guidance(risk),
+        "recommendations": risk_guidance(risk, currency),
+        "rate_source": str(row.get("source", "BNR reference-rate dataset")),
+        "rate_type": str(row.get("rate_type", "BNR reference rate")),
         "disclaimer": "FXGuard AI provides decision support only. It is not guaranteed financial, forex trading, or professional investment advice.",
     }
+
+
+def build_excel_report(result: dict) -> BytesIO:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Risk Assessment"
+    sheet.sheet_view.showGridLines = False
+    sheet.column_dimensions["A"].width = 36
+    sheet.column_dimensions["B"].width = 74
+
+    title_fill = PatternFill("solid", fgColor="1C3BAB")
+    section_fill = PatternFill("solid", fgColor="DBE4FF")
+    header_fill = PatternFill("solid", fgColor="EFF4FF")
+
+    sheet.append(["FXGUARD AI — RISK ASSESSMENT REPORT"])
+    sheet.merge_cells("A1:B1")
+    sheet["A1"].fill = title_fill
+    sheet["A1"].font = Font(color="FFFFFF", bold=True, size=15)
+    sheet["A1"].alignment = Alignment(horizontal="center", vertical="center")
+    sheet.row_dimensions[1].height = 28
+
+    def add_section(title: str, headings: tuple[str, str]) -> None:
+        sheet.append([])
+        sheet.append([title])
+        row_number = sheet.max_row
+        sheet.merge_cells(start_row=row_number, start_column=1, end_row=row_number, end_column=2)
+        sheet.cell(row_number, 1).fill = section_fill
+        sheet.cell(row_number, 1).font = Font(color="1C3BAB", bold=True)
+        sheet.append(list(headings))
+        for cell in sheet[sheet.max_row]:
+            cell.fill = header_fill
+            cell.font = Font(bold=True)
+
+    amount = result.get("amount", result.get("amount_currency"))
+    add_section("SUMMARY", ("Field", "Value"))
+    summary_rows = [
+        ("Date generated", datetime.now().strftime("%d %B %Y")),
+        ("Analysis date (BNR data)", result["analysis_date"]),
+        ("Currency pair", result["pair"]),
+        (f"Payment amount ({result['currency']})", amount),
+        ("Planning horizon (days)", result["horizon_days"]),
+        (f"Current rate (RWF per {result['currency']})", result["current_rate"]),
+        ("Risk level", result["risk_level"]),
+        ("Strength of this result", result.get("confidence_score", result.get("confidence"))),
+        ("Cost at current rate (RWF)", result["current_cost_rwf"]),
+        ("Possible extra cost (RWF)", result["possible_extra_cost_rwf"]),
+        ("Suggested safety buffer (RWF)", result["suggested_margin_buffer_rwf"]),
+        ("Rate source", result["rate_source"]),
+    ]
+    for label, value in summary_rows:
+        sheet.append([label, value])
+    for row_number in range(7, sheet.max_row + 1):
+        label = sheet.cell(row_number, 1).value
+        value_cell = sheet.cell(row_number, 2)
+        if label == "Strength of this result":
+            value_cell.number_format = "0.0%"
+        elif label and ("amount" in label.lower() or "rate" in label.lower() or "cost" in label.lower() or "buffer" in label.lower()):
+            value_cell.number_format = "#,##0.00"
+
+    add_section("HOW STRONGLY EACH RISK LEVEL IS SUPPORTED", ("Risk level", "Support"))
+    for risk_class, probability in sorted(
+        result.get("class_probabilities", {}).items(), key=lambda item: item[1], reverse=True
+    ):
+        sheet.append([risk_class, probability])
+        sheet.cell(sheet.max_row, 2).number_format = "0.0%"
+
+    add_section("RECOMMENDATIONS", ("#", "Action"))
+    for index, recommendation in enumerate(result.get("recommendations", []), start=1):
+        sheet.append([index, recommendation])
+        sheet.cell(sheet.max_row, 2).alignment = Alignment(wrap_text=True, vertical="top")
+
+    plain_driver_labels = {
+        "daily_return": "Change since the previous day",
+        "return_7d": "Change over the last 7 days",
+        "return_14d": "Change over the last 14 days",
+        "ma_7": "Typical rate over the last 7 days",
+        "ma_30": "Typical rate over the last 30 days",
+        "ma_gap": "Difference between recent and longer-term rates",
+        "volatility_7d": "How much the rate moved up and down this week",
+        "momentum_7d": "Direction the rate moved this week",
+        "spread_pct": "Gap between BNR buying and selling rates",
+        "depreciation_days_7d": "Days the foreign currency became more expensive this week",
+    }
+    percentage_drivers = {
+        "daily_return", "return_7d", "return_14d", "ma_gap",
+        "volatility_7d", "momentum_7d", "spread_pct",
+    }
+
+    add_section("WHAT THIS RESULT IS BASED ON", ("Recent rate information", "Value"))
+    for signal, value in result.get("key_drivers", {}).items():
+        if signal in percentage_drivers:
+            display_value = f"{float(value) * 100:+.2f}%"
+        elif signal in {"ma_7", "ma_30"}:
+            display_value = f"{float(value):,.4f} RWF"
+        elif signal == "depreciation_days_7d":
+            display_value = f"{int(value)} of 7 days"
+        else:
+            display_value = value
+        sheet.append([plain_driver_labels.get(signal, signal.replace("_", " ").title()), display_value])
+
+    add_section("IMPORTANT NOTE", ("Notice", "Details"))
+    sheet.append(["Decision support only", result["disclaimer"]])
+    sheet.cell(sheet.max_row, 2).alignment = Alignment(wrap_text=True, vertical="top")
+
+    output = BytesIO()
+    workbook.save(output)
+    output.seek(0)
+    return output
+
+
+@app.post("/api/export-excel")
+def export_excel(req: RiskRequest):
+    result = predict_risk(req)
+    output = build_excel_report(result)
+    filename = f"fxguard-result-{result['analysis_date']}.xlsx"
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.post("/api/feedback")

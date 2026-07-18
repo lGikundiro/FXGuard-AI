@@ -1,17 +1,17 @@
-# FXGuard AI — USD-RWF Exchange Rate Risk Forecasting MVP
+# FXGuard AI — Multi-currency Exchange Rate Risk Forecasting
 
-FXGuard AI is a full-stack web application integrated with machine learning models for classifying short-term USD/RWF depreciation risk for Rwanda-based importers.
+FXGuard AI is a full-stack web application with machine-learning models for classifying short-term foreign-currency/RWF depreciation risk for Rwanda-based importers.
 
-The MVP focuses on **USD-RWF only** using a prepared 4-year BNR dataset. The architecture is designed so that EUR, GBP, KES, UGX, CNY, and other currencies can be added later using the same data-preparation pipeline.
+The prototype supports **USD, EUR, and KES against RWF**. Each currency has its own 7-day and 14-day classifier trained on official BNR exchange-rate history.
 
 Deployed link to project: https://fxguard-ai.onrender.com/
 YouTube Demo: https://youtu.be/jNrEOB-uwfE
 
 ## What the project includes
 
-- 4-year USD/RWF dataset prepared from BNR export
-- Feature-engineered datasets for 7-day and 14-day risk labels
-- Trained ML models for 7-day and 14-day risk classification
+- Official BNR buying, average, and selling rates imported from Excel exports
+- More than four years of USD/RWF, EUR/RWF, and KES/RWF history
+- Per-currency feature datasets and trained 7-day/14-day classifiers
 - FastAPI backend
 - Web interface frontend
 - Decision-support output for importers
@@ -24,15 +24,16 @@ YouTube Demo: https://youtu.be/jNrEOB-uwfE
 FXGuard_AI_Project/
   backend/
     app/main.py                  # FastAPI backend
-    models/                      # trained risk models and metadata
+    models/                      # per-currency risk models and metadata
   data/
-    raw/currency_table.xlsx      # original uploaded BNR Excel export
+    raw/                         # uploaded BNR histories for USD, EUR, and KES
     processed/                   # clean, feature, and model-ready datasets
     data_dictionary.csv
   frontend/index.html            # web UI markup
   frontend/styles.css            # frontend styling
   frontend/app.js                # frontend behavior and API calls
-  scripts/train_models.py        # retrain ML models
+  scripts/sync_multicurrency_rates.py   # refresh rate histories/features
+  scripts/train_multicurrency_models.py # retrain all currency models
   reports/                       # dataset summaries and user feedback output
   render.yaml                    # Render deployment blueprint
   requirements.txt
@@ -125,13 +126,21 @@ Health Check Path:
 
 The deployment uses Python `3.12.10` from `.python-version`. The app serves both the FastAPI backend and the frontend from one Render Web Service.
 
+## Rate data source
+
+Bundled historical USD, EUR, and KES data comes exclusively from the official BNR Excel exports in `data/raw/`. Their published buying, average, and selling rates are retained, and the average rate is used as the model's `mid_rate`.
+
+The application does not synthesize rates or fetch them through a third-party provider. It serves the most recently imported official records and clearly reports their date through `/api/data-freshness`.
+
+To refresh the data, download updated USD, EUR, and KES histories from BNR's exchange-rate page, replace the three workbooks in `data/raw/`, and run the synchronization and training commands below. The synchronization script validates codes, columns, dates, rates, and workbook hashes before producing application data.
+
 ## Model details
 
-The current MVP trains two models:
+The prototype trains two models for each supported currency:
 
-- `risk_model_7d.pkl` — predicts 7-day USD/RWF depreciation risk
-- `risk_model_14d.pkl` — predicts 14-day USD/RWF depreciation risk
-- The current training script compares logistic regression, random forest, and XGBoost.
+- `risk_model_<CURRENCY>_7d.pkl` — classifies 7-day depreciation pressure
+- `risk_model_<CURRENCY>_14d.pkl` — classifies 14-day depreciation pressure
+- Training compares logistic regression and random forest for every currency/horizon.
 
 Risk classes:
 
@@ -162,40 +171,30 @@ Features used:
 ## Retrain the models
 
 ```bash
-python scripts/train_models.py
+python scripts/sync_multicurrency_rates.py
+python scripts/train_multicurrency_models.py
 ```
 
-This will recreate:
+This validates the three official BNR Excel histories and recreates the multi-currency datasets, six model files, and:
 
 ```text
-backend/models/risk_model_7d.pkl
-backend/models/risk_model_14d.pkl
-backend/models/model_metadata.json
+backend/models/multicurrency_model_metadata.json
 ```
 
-The saved model files will contain the best-performing classifier for each horizon after the comparison run.
-
-The training script also regenerates:
-
-```text
-reports/model_evaluation.md
-```
-
-This report records the chronological train/test windows, class distributions, majority-class baseline, rolling-origin backtest folds, probability-quality metrics, and any warnings about class imbalance in the validation windows.
-
-Current model-validation caveat: the most recent chronological test windows contain only the `Low` risk class, so perfect-looking accuracy should be interpreted carefully. The rolling-origin backtest in `reports/model_evaluation.md` gives a more honest view of performance across earlier windows where more classes appear.
-
-If `xgboost` is not installed in the active Python environment, the training script skips XGBoost and records that in the model metadata/report instead of failing.
+The metadata records each chronological train/test window, class distribution, candidate metrics, selected classifier, data date, and per-currency label thresholds. Treat model confidence as a decision-support signal: it is not a guarantee of the future exchange rate, and some recent validation windows have limited class variety.
 
 ## Main API endpoints
 
 ```text
 GET  /health
-GET  /api/latest-rate
-GET  /api/data-freshness
-GET  /api/history?days=180
+GET  /api/currencies
+GET  /api/latest-rate?currency=EUR
+GET  /api/latest-rates
+GET  /api/data-freshness?currency=KES
+GET  /api/history?currency=USD&days=180
 GET  /api/model-metadata
 POST /api/predict-risk
+POST /api/export-excel
 POST /api/feedback
 GET  /api/feedback-file
 ```
@@ -204,10 +203,9 @@ Example prediction request:
 
 ```json
 {
-  "currency": "USD",
+  "currency": "EUR",
   "amount": 10000,
-  "horizon": 7,
-  "margin_percent": 20
+  "horizon": 7
 }
 ```
 
@@ -239,7 +237,7 @@ Participants should use hypothetical supplier amounts during testing unless they
 
 ## Improvement roadmap
 
-The current app uses local prepared BNR datasets. The `/api/data-freshness` endpoint reports how many days old the latest local rate and feature rows are. A future production version should automatically fetch new official BNR exchange-rate data, rebuild processed datasets, retrain or validate the models, and publish a fresh evaluation report.
+The app reports the age of its latest imported BNR record through `/api/data-freshness`. A production deployment should establish a documented schedule for downloading the official BNR exports, running `sync_multicurrency_rates.py`, and retraining or validating the models after enough new observations accumulate. Direct BNR API access could automate that workflow later if it becomes available.
 
 The frontend is still a single-file MVP, but the most immediate bugs have been cleaned: duplicate recommendation container IDs were removed, the obsolete hidden feedback controls were removed, and the visible feedback flow now uses the embedded Google Form.
 

@@ -1,11 +1,13 @@
 column,description
 date,Calendar date for the exchange-rate observation.
 currency,Foreign currency code against RWF.
-buying_rate,BNR buying rate from raw file.
-average_rate,BNR average rate from raw file; used as mid_rate when available.
-selling_rate,BNR selling rate from raw file.
-mid_rate,Average exchange rate used for modeling. Equals average_rate if provided.
-is_official_observation,1 if date had an official row in raw BNR export; 0 if daily row was forward-filled.
+buying_rate,Official BNR buying rate from the local Excel export.
+average_rate,Official BNR average rate; used as mid_rate.
+selling_rate,Official BNR selling rate from the local Excel export.
+mid_rate,RWF required for one unit of the foreign currency; equal to the official BNR average rate.
+is_official_observation,1 if the date is present in the BNR export; 0 if the daily calendar row was forward-filled.
+source,Official source of the imported observation.
+rate_type,Identifies the row as BNR buying/average/selling rates.
 daily_return,Percentage change in mid_rate from previous day.
 return_7d,Percentage change in mid_rate over previous 7 days.
 return_14d,Percentage change in mid_rate over previous 14 days.

@@ -1,0 +1,70 @@
+{
+  "generated_at": "2026-07-18",
+  "source": "Direct National Bank of Rwanda Excel exports",
+  "source_url": "https://www.bnr.rw/exchangeRate",
+  "delivery_mode": "manual official export",
+  "currencies": [
+    "USD",
+    "EUR",
+    "KES"
+  ],
+  "raw_files": {
+    "USD": {
+      "filename": "USD exchange history.xlsx",
+      "sha256": "13ec6f807cc61d14381903803fd4a57f6c46227024348b2f5c37db904e7a7b4d",
+      "rows": 1110
+    },
+    "EUR": {
+      "filename": "Euro exchange history.xlsx",
+      "sha256": "0fb4d33f7e0f77c8fdabf4ee097ed193ca40417a0526170c45c3b4d2c63b95c3",
+      "rows": 1110
+    },
+    "KES": {
+      "filename": "KES exchange hsitroy.xlsx",
+      "sha256": "3cad08a9ff9923eaa5cb42a03c093858f671a7f463f08ed398600fa5a1460eb1",
+      "rows": 1110
+    }
+  },
+  "coverage": {
+    "EUR": {
+      "first_date": "2022-01-04",
+      "latest_date": "2026-07-17",
+      "official_observations": 1110,
+      "source": "National Bank of Rwanda Excel export"
+    },
+    "KES": {
+      "first_date": "2022-01-04",
+      "latest_date": "2026-07-17",
+      "official_observations": 1110,
+      "source": "National Bank of Rwanda Excel export"
+    },
+    "USD": {
+      "first_date": "2022-01-04",
+      "latest_date": "2026-07-17",
+      "official_observations": 1110,
+      "source": "National Bank of Rwanda Excel export"
+    }
+  },
+  "first_date": "2022-01-04",
+  "latest_date": "2026-07-17",
+  "label_thresholds": {
+    "USD": {
+      "7d_low_max": 0.001406516951591108,
+      "7d_medium_max": 0.002564736702298065,
+      "14d_low_max": 0.0028341812959313817,
+      "14d_medium_max": 0.00519416519715823
+    },
+    "EUR": {
+      "7d_low_max": 0.001331519587732588,
+      "7d_medium_max": 0.008980066603443372,
+      "14d_low_max": 0.0026406734449495595,
+      "14d_medium_max": 0.014495210646774614
+    },
+    "KES": {
+      "7d_low_max": 0.0002453075704211827,
+      "7d_medium_max": 0.002129758222632505,
+      "14d_low_max": 0.0005831382476919611,
+      "14d_medium_max": 0.0042618192138736966
+    }
+  }
+}
