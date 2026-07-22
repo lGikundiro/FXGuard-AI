@@ -4,7 +4,9 @@ FXGuard AI is a full-stack web application with machine-learning models for clas
 
 The prototype supports **USD, EUR, and KES against RWF**. Each currency has its own 7-day and 14-day classifier trained on official BNR exchange-rate history.
 
-Deployed link to project: https://fxguard-ai.onrender.com/
+Fast-loading interface: https://fxguard-ai-web.onrender.com/
+
+API and fallback interface: https://fxguard-ai.onrender.com/
 YouTube Demo: https://youtu.be/jNrEOB-uwfE
 
 ## What the project includes
@@ -124,7 +126,7 @@ Health Check Path:
 /health
 ```
 
-The deployment uses Python `3.12.10` from `.python-version`. The app serves both the FastAPI backend and the frontend from one Render Web Service.
+The deployment uses Python `3.12.10` from `.python-version`. The Blueprint also deploys the frontend as a Render Static Site. This lets the interface load from Render's CDN immediately while the free API service wakes in the background. The Python service still serves a fallback copy of the interface.
 
 ## Rate data source
 
@@ -140,7 +142,7 @@ The prototype trains two models for each supported currency:
 
 - `risk_model_<CURRENCY>_7d.pkl` — classifies 7-day depreciation pressure
 - `risk_model_<CURRENCY>_14d.pkl` — classifies 14-day depreciation pressure
-- Training compares logistic regression and random forest for every currency/horizon.
+- Training compares logistic regression, random forest, and XGBoost for every currency/horizon.
 
 Risk classes:
 
@@ -211,7 +213,7 @@ Example prediction request:
 
 ## Important academic note
 
-The system provides **decision support only**. It is not guaranteed financial advice, forex trading advice, or professional consultancy. Exchange-rate movements are uncertain, and users should not rely only on the tool for major business decisions.
+The system provides **decision support only**. It does not provide financial advice, forex trading advice, or professional consultancy. Exchange-rate movements are uncertain, and the tool should be considered alongside the user's own business information when making major decisions.
 
 ## User testing
 

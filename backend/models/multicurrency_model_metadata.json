@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-18T18:52:37+00:00",
+  "generated_at": "2026-07-19T13:14:08+00:00",
   "currencies": [
     "USD",
     "EUR",
@@ -105,6 +105,11 @@
             "accuracy": 1.0,
             "balanced_accuracy": null,
             "f1_macro": 1.0
+          },
+          "xgboost": {
+            "accuracy": 1.0,
+            "balanced_accuracy": null,
+            "f1_macro": 1.0
           }
         }
       },
@@ -133,6 +138,11 @@
             "f1_macro": 1.0
           },
           "random_forest": {
+            "accuracy": 1.0,
+            "balanced_accuracy": null,
+            "f1_macro": 1.0
+          },
+          "xgboost": {
             "accuracy": 1.0,
             "balanced_accuracy": null,
             "f1_macro": 1.0
@@ -171,11 +181,16 @@
             "accuracy": 0.5062,
             "balanced_accuracy": 0.351,
             "f1_macro": 0.2857
+          },
+          "xgboost": {
+            "accuracy": 0.4969,
+            "balanced_accuracy": 0.3248,
+            "f1_macro": 0.2741
           }
         }
       },
       "14d": {
-        "best_model": "random_forest",
+        "best_model": "xgboost",
         "model_file": "risk_model_EUR_14d.pkl",
         "training_rows": 1289,
         "test_rows": 323,
@@ -204,13 +219,18 @@
             "accuracy": 0.5728,
             "balanced_accuracy": 0.3473,
             "f1_macro": 0.3313
+          },
+          "xgboost": {
+            "accuracy": 0.6068,
+            "balanced_accuracy": 0.3672,
+            "f1_macro": 0.3511
           }
         }
       }
     },
     "KES": {
       "7d": {
-        "best_model": "random_forest",
+        "best_model": "xgboost",
         "model_file": "risk_model_KES_7d.pkl",
         "training_rows": 1295,
         "test_rows": 324,
@@ -239,6 +259,11 @@
             "accuracy": 0.463,
             "balanced_accuracy": 0.4596,
             "f1_macro": 0.3451
+          },
+          "xgboost": {
+            "accuracy": 0.4877,
+            "balanced_accuracy": 0.4962,
+            "f1_macro": 0.3999
           }
         }
       },
@@ -269,6 +294,11 @@
             "f1_macro": 0.2036
           },
           "random_forest": {
+            "accuracy": 0.4396,
+            "balanced_accuracy": 0.3333,
+            "f1_macro": 0.2036
+          },
+          "xgboost": {
             "accuracy": 0.4396,
             "balanced_accuracy": 0.3333,
             "f1_macro": 0.2036

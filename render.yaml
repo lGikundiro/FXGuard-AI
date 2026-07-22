@@ -7,3 +7,24 @@ services:
     startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     autoDeployTrigger: commit
+
+  - type: web
+    name: fxguard-ai-web
+    runtime: static
+    buildCommand: >-
+      mkdir -p dist/static &&
+      cp -R frontend/. dist/static/ &&
+      cp frontend/index.html dist/index.html &&
+      sed -i 's|window.FXGUARD_API_URL = "";|window.FXGUARD_API_URL = "https://fxguard-ai.onrender.com";|' dist/index.html
+    staticPublishPath: ./dist
+    autoDeployTrigger: commit
+    envVars:
+      - key: SKIP_INSTALL_DEPS
+        value: "true"
+    headers:
+      - path: /static/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /
+        name: Cache-Control
+        value: no-cache

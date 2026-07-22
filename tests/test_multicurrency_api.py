@@ -57,10 +57,10 @@ class MultiCurrencyApiTests(unittest.TestCase):
         result = predict_risk(RiskRequest(currency="KES", amount=3000, horizon=7))
         workbook = load_workbook(build_excel_report(result), data_only=True)
         sheet = workbook["Risk Assessment"]
-        self.assertEqual(sheet["A1"].value, "FXGUARD AI — RISK ASSESSMENT REPORT")
+        self.assertEqual(sheet["A1"].value, "FXGUARD AI — PAYMENT CHECK REPORT")
         self.assertIn("SUMMARY", [cell.value for cell in sheet["A"]])
         self.assertIn(
-            "HOW STRONGLY EACH RISK LEVEL IS SUPPORTED",
+            "HOW LIKELY EACH RISK LEVEL IS",
             [cell.value for cell in sheet["A"]],
         )
         self.assertIn("WHAT THIS RESULT IS BASED ON", [cell.value for cell in sheet["A"]])

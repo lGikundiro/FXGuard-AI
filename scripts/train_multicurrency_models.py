@@ -2,8 +2,13 @@
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 import joblib
 import pandas as pd
@@ -12,14 +17,17 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from xgboost import XGBClassifier
+
+from backend.app.modeling import EncodedTargetClassifier
 
 
-ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data" / "processed"
 MODEL_DIR = ROOT / "backend" / "models"
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
 CURRENCIES = ("USD", "EUR", "KES")
+CLASS_ORDER = ("Low", "Medium", "High")
 FEATURE_COLUMNS = [
     "mid_rate", "daily_return", "return_7d", "return_14d", "ma_7", "ma_14", "ma_30",
     "ma_gap", "volatility_7d", "volatility_14d", "volatility_30d", "momentum_7d",
@@ -49,6 +57,23 @@ def candidates() -> dict:
             class_weight="balanced_subsample",
             random_state=42,
             n_jobs=-1,
+        ),
+        "xgboost": EncodedTargetClassifier(
+            XGBClassifier(
+                objective="multi:softprob",
+                num_class=len(CLASS_ORDER),
+                n_estimators=250,
+                learning_rate=0.05,
+                max_depth=5,
+                subsample=0.9,
+                colsample_bytree=0.9,
+                reg_lambda=1.0,
+                random_state=42,
+                n_jobs=-1,
+                tree_method="hist",
+                eval_metric="mlogloss",
+            ),
+            classes=CLASS_ORDER,
         ),
     }
 

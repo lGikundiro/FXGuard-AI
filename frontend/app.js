@@ -6,18 +6,18 @@
    ========================================================== */
 'use strict';
 
-const API = window.location.origin;
+const configuredApi = String(window.FXGUARD_API_URL ?? '').trim();
+const API = configuredApi || window.location.origin;
 
 /* --- State ------------------------------------------------ */
-let selectedHorizon     = 7;
 let selectedMainHorizon = 7;
 let selectedCurrency    = 'USD';
 let latestResult        = null;
 let latestRate          = null;   // kept for converter
 let historyChart        = null;
-let probChart           = null;
 let currentDays         = 180;   // active chart range
-let modelMetadata       = {};
+let chartLibraryRequested = false;
+let activeScreen        = 'dashboard';
 
 const FALLBACK_CURRENCIES = {
   USD: { name: 'US Dollar', symbol: '$', decimals: 2 },
@@ -29,16 +29,21 @@ let currencyCatalog = { ...FALLBACK_CURRENCIES };
 /* --- Page titles ------------------------------------------ */
 const PAGE_TITLES = {
   dashboard:  'Dashboard',
-  assessment: 'Payment check',
+  assessment: 'Run payment check',
   results:    'Results',
-  decision:   'Recommendations',
-  feedback:   'User feedback',
+  decision:   'Payment tips',
+  feedback:   'Share feedback',
 };
 
 /* ==========================================================
    NAVIGATION
    ========================================================== */
 function showScreen(id) {
+  const target = document.getElementById(id);
+  if (!target || id === activeScreen) return;
+
+  activeScreen = id;
+
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(b => {
     const isActive = b.dataset.screen === id;
@@ -46,11 +51,11 @@ function showScreen(id) {
     b.setAttribute('aria-current', isActive ? 'page' : 'false');
   });
 
-  const target = document.getElementById(id);
-  if (target) target.classList.add('active');
+  target.classList.add('active');
 
   const titleEl = document.getElementById('pageTitle');
   if (titleEl) titleEl.textContent = PAGE_TITLES[id] ?? id;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 
   // Re-render result if returning to results/decision and we have data
   if ((id === 'results' || id === 'decision') && latestResult) {
@@ -68,14 +73,6 @@ document.querySelectorAll('[data-go-screen]').forEach(el =>
 /* ==========================================================
    HORIZON TOGGLES
    ========================================================== */
-document.querySelectorAll('[data-horizon]').forEach(btn =>
-  btn.addEventListener('click', () => {
-    selectedHorizon = Number(btn.dataset.horizon);
-    document.querySelectorAll('[data-horizon]').forEach(b =>
-      b.classList.toggle('active', b === btn)
-    );
-  })
-);
 document.querySelectorAll('[data-horizon-main]').forEach(btn =>
   btn.addEventListener('click', () => {
     selectedMainHorizon = Number(btn.dataset.horizonMain);
@@ -154,16 +151,10 @@ function showStaleBanner(freshness) {
   const days = freshness.days_since_latest_rate;
   const date = freshness.latest_rate_date;
 
-  if (freshness.status === 'aging') {
-    banner.classList.remove('hidden', 'stale');
-    text.textContent = `Using ${freshness.pair} BNR rate data from ${date} (${days} days ago). The result uses the most recent information available.`;
-    document.querySelector('.main-content')?.classList.add('has-banner');
-  } else {
-    banner.classList.remove('hidden');
-    banner.classList.add('stale');
-    text.textContent = `${freshness.pair} rate data is from ${date} (${days} days ago). Results reflect conditions as of that date.`;
-    document.querySelector('.main-content')?.classList.add('has-banner');
-  }
+  banner.classList.remove('hidden');
+  banner.classList.add('stale');
+  text.textContent = `Latest imported ${freshness.pair} BNR rate: ${date} (${days} days ago). Checks use this date until newer rates are imported.`;
+  document.querySelector('.main-content')?.classList.add('has-banner');
 
   document.getElementById('staleBannerClose')?.addEventListener('click', () => {
     banner.classList.add('hidden');
@@ -177,15 +168,24 @@ function showStaleBanner(freshness) {
 function setStatus(freshness) {
   const dot  = document.querySelector('.status-dot');
   const text = document.getElementById('sidebarStatusText');
-  if (!dot || !text) return;
-  const map = {
-    fresh: { cls: 'fresh', label: 'Data up to date' },
-    aging: { cls: 'aging', label: 'Data aging' },
-    stale: { cls: 'stale', label: 'Data stale' },
-  };
-  const s = map[freshness?.status] ?? { cls: '', label: 'Unknown' };
-  dot.className    = `status-dot ${s.cls}`;
-  text.textContent = s.label;
+  const pill = document.getElementById('sidebarStatus');
+  if (!dot || !text || !pill) return;
+
+  if (!freshness) {
+    dot.className = 'status-dot';
+    text.textContent = 'Rate date unavailable';
+    pill.title = 'The latest BNR rate date could not be checked.';
+    return;
+  }
+
+  const isCurrent = freshness.status === 'fresh';
+  const parsedDate = new Date(`${freshness.latest_rate_date}T00:00:00`);
+  const dateLabel = Number.isNaN(parsedDate.getTime())
+    ? freshness.latest_rate_date
+    : new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(parsedDate);
+  dot.className = `status-dot ${isCurrent ? 'current' : 'needs-update'}`;
+  text.textContent = `${isCurrent ? 'Recent BNR rate' : 'Older BNR rate'} · ${dateLabel}`;
+  pill.title = `Latest imported BNR rate: ${freshness.latest_rate_date}`;
 }
 
 /* ==========================================================
@@ -198,19 +198,8 @@ function populateRateUI(latest) {
   setText('badgeRate',   rate);
   setText('badgeDate',   latest.date);
   setText('badgeLabel',  `BNR average rate · ${currency}/RWF`);
-  setText('kpiRateLabel', `Current ${currency}/RWF rate`);
-  setText('kpiRate',     `${rate} RWF`);
-  setText('kpiRateDate', `As of ${latest.date}`);
   setText('assessmentSource', latest.source ?? 'BNR exchange rates');
   updateConverter();
-}
-
-function populateModelUI(metadata, currency = selectedCurrency) {
-  const models = metadata?.models?.[currency] ?? {};
-  const m7  = models?.['7d']?.best_model  ? 'Available' : 'Unavailable';
-  const m14 = models?.['14d']?.best_model ? 'Available' : 'Unavailable';
-  setText('kpiModel7',  m7);
-  setText('kpiModel14', m14);
 }
 
 /* ==========================================================
@@ -270,8 +259,8 @@ async function drawHistory(days = 180) {
   const rawRange = rawMax - rawMin || 1;
   const ctx      = canvas.getContext('2d');
   const grad     = ctx.createLinearGradient(0, 0, 0, 300);
-  grad.addColorStop(0, 'rgba(59,91,219,0.18)');
-  grad.addColorStop(1, 'rgba(59,91,219,0.01)');
+  grad.addColorStop(0, 'rgba(245,202,82,0.24)');
+  grad.addColorStop(1, 'rgba(255,255,255,0.01)');
 
   historyChart = new Chart(canvas, {
     type: 'line',
@@ -281,12 +270,12 @@ async function drawHistory(days = 180) {
         label: `${currency}/RWF reference rate`,
         data: values,
         tension: 0.3,
-        borderColor: '#3b5bdb',
+        borderColor: '#f5ca52',
         backgroundColor: grad,
         fill: true,
         pointRadius: points.map((_, i) => i === points.length - 1 ? 4 : 0),
         pointHoverRadius: 5,
-        pointBackgroundColor: '#3b5bdb',
+        pointBackgroundColor: '#fff2b6',
         borderWidth: 2,
       }],
     },
@@ -298,8 +287,8 @@ async function drawHistory(days = 180) {
         legend: { display: false },
         tooltip: {
           displayColors: false,
-          backgroundColor: '#1a1f2e',
-          titleColor: '#a0aec0',
+          backgroundColor: '#0d2038',
+          titleColor: 'rgba(255,255,255,.68)',
           bodyColor: '#fff',
           padding: 10,
           cornerRadius: 8,
@@ -315,8 +304,8 @@ async function drawHistory(days = 180) {
           border: { display: false },
           ticks: {
             maxTicksLimit: 7,
-            color: '#718096',
-            font: { size: 11, family: "'Inter', sans-serif" },
+            color: 'rgba(255,255,255,.58)',
+            font: { size: 11, family: "'Manrope', sans-serif" },
             callback(val) {
               const label = this.getLabelForValue(val);
               return label ? label.slice(days <= 365 ? 5 : 0) : '';
@@ -326,12 +315,12 @@ async function drawHistory(days = 180) {
         y: {
           min: rawMin - rawRange * 0.08,
           max: rawMax + rawRange * 0.08,
-          grid: { color: 'rgba(0,0,0,0.05)' },
+          grid: { color: 'rgba(255,255,255,0.08)' },
           border: { display: false },
           ticks: {
             maxTicksLimit: 5,
-            color: '#718096',
-            font: { size: 11, family: "'IBM Plex Mono', monospace" },
+            color: 'rgba(255,255,255,.58)',
+            font: { size: 11, family: "'Manrope', sans-serif" },
             callback: v => fmtRate(v),
           },
         },
@@ -364,6 +353,30 @@ document.querySelectorAll('.chart-range-btn').forEach(btn =>
   btn.addEventListener('click', () => drawHistory(Number(btn.dataset.days)))
 );
 
+function loadChartLibraryWhenIdle() {
+  if (chartLibraryRequested || typeof Chart !== 'undefined') return;
+  chartLibraryRequested = true;
+
+  const load = () => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+    script.async = true;
+    script.onload = () => drawHistory(currentDays).catch(error => {
+      console.error('Chart refresh failed:', error);
+    });
+    script.onerror = () => {
+      console.info('Chart library unavailable; using the built-in chart.');
+    };
+    document.head.appendChild(script);
+  };
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(load, { timeout: 2500 });
+  } else {
+    window.setTimeout(load, 1200);
+  }
+}
+
 /* Fallback canvas renderer */
 function drawFallbackLine(canvas, points) {
   if (!points.length) return;
@@ -382,25 +395,25 @@ function drawFallbackLine(canvas, points) {
   const cW   = W - pad.l - pad.r, cH = H - pad.t - pad.b;
   const xOf  = i => pad.l + (cW * i) / Math.max(points.length - 1, 1);
   const yOf  = v => pad.t + cH - ((v - vMin) / vR) * cH;
-  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle = 'rgba(0,0,0,0.06)'; ctx.lineWidth = 1;
+  ctx.fillStyle = '#0d2038'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
   for (let i=0;i<=4;i++) {
     const y = pad.t+(cH/4)*i;
     ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
-    ctx.fillStyle='#718096'; ctx.font='10px IBM Plex Mono,monospace';
+    ctx.fillStyle='rgba(255,255,255,.58)'; ctx.font='10px Manrope,sans-serif';
     ctx.textAlign='right'; ctx.fillText(fmtRate(vMax-(vR/4)*i), pad.l-4, y+3);
   }
   const grad = ctx.createLinearGradient(0,pad.t,0,H-pad.b);
-  grad.addColorStop(0,'rgba(59,91,219,0.18)'); grad.addColorStop(1,'rgba(59,91,219,0)');
+  grad.addColorStop(0,'rgba(245,202,82,0.24)'); grad.addColorStop(1,'rgba(255,255,255,0)');
   ctx.beginPath();
   points.forEach((p,i) => { const x=xOf(i),y=yOf(p.mid_rate); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
   ctx.lineTo(xOf(points.length-1),H-pad.b); ctx.lineTo(xOf(0),H-pad.b);
   ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
   ctx.beginPath();
   points.forEach((p,i) => { const x=xOf(i),y=yOf(p.mid_rate); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
-  ctx.strokeStyle='#3b5bdb'; ctx.lineWidth=2; ctx.stroke();
+  ctx.strokeStyle='#f5ca52'; ctx.lineWidth=2; ctx.stroke();
   const lx=xOf(points.length-1), ly=yOf(vals[vals.length-1]);
-  ctx.beginPath(); ctx.arc(lx,ly,4,0,Math.PI*2); ctx.fillStyle='#3b5bdb'; ctx.fill();
+  ctx.beginPath(); ctx.arc(lx,ly,4,0,Math.PI*2); ctx.fillStyle='#fff2b6'; ctx.fill();
 }
 
 /* ==========================================================
@@ -426,6 +439,14 @@ function formatCheckTime(check) {
     }).format(checkedAt);
   }
   return check.date ?? '—';
+}
+
+function formatInvoiceAmount(check) {
+  const currency = String(check.currency ?? 'USD').toUpperCase();
+  const amount = new Intl.NumberFormat('en-RW', {
+    maximumFractionDigits: 2,
+  }).format(Number(check.amount ?? 0));
+  return `${currency} ${amount}`;
 }
 
 function saveCheck(r) {
@@ -470,52 +491,71 @@ function renderRecentChecks() {
   const checks  = getChecks();
   const section = document.getElementById('recentChecks');
   const tbody   = document.getElementById('recentChecksBody');
+  const clearButton = document.getElementById('clearHistory');
   if (!section || !tbody) return;
 
-  if (!checks.length) { section.classList.add('hidden'); return; }
   section.classList.remove('hidden');
+  if (clearButton) clearButton.disabled = checks.length === 0;
+
+  if (!checks.length) {
+    tbody.innerHTML = `
+      <tr class="recent-checks-empty">
+        <td colspan="7">
+          <p class="recent-empty-title">No payment checks yet</p>
+          <p class="recent-empty-copy">Run a payment check and your result will appear here.</p>
+        </td>
+      </tr>`;
+    return;
+  }
 
   tbody.innerHTML = checks.map((c, i) => `
-    <tr>
-      <td>${formatCheckTime(c)}</td>
-      <td class="mono">${currencyCatalog[c.currency ?? 'USD']?.symbol ?? c.currency ?? ''} ${new Intl.NumberFormat('en').format(c.amount)}</td>
+    <tr class="recent-check-row" data-reopen="${i}" tabindex="0"
+      aria-label="Open ${c.risk} risk payment check from ${formatCheckTime(c)}">
+      <td><time class="check-date">${formatCheckTime(c)}</time></td>
+      <td class="mono money-col">${formatInvoiceAmount(c)}</td>
       <td>${c.horizon} days</td>
       <td><span class="risk-pill ${c.risk}">${c.risk}</span></td>
-      <td class="mono">RWF ${fmt(c.cost)}</td>
-      <td class="mono" style="color:var(--red-500)">+RWF ${fmt(c.extra)}</td>
+      <td class="mono money-col">RWF ${fmt(c.cost)}</td>
+      <td class="money-col extra-cost-col">
+        <span class="extra-cost-badge" title="Estimated extra cost">
+          <span class="extra-cost-arrow" aria-hidden="true">↑</span>
+          <span>RWF ${fmt(c.extra)}</span>
+        </span>
+      </td>
       <td class="td-action">
-        <button class="btn-ghost" style="font-size:11px;padding:4px 8px" data-reopen="${i}"
-          title="View full result for this check">
-          View
-        </button>
+        <span class="row-link" aria-hidden="true">View →</span>
       </td>
     </tr>`
   ).join('');
 
-  // Wire each View button to load the stored full result and navigate to Results screen
-  tbody.querySelectorAll('[data-reopen]').forEach(btn =>
-    btn.addEventListener('click', () => {
-      const idx   = Number(btn.dataset.reopen);
+  function openCheck(row) {
+      const idx   = Number(row.dataset.reopen);
       const check = checks[idx];
 
       if (check.full) {
-        // Restore as the active result and navigate to Results screen
         latestResult = check.full;
         renderResult(latestResult);
         showScreen('results');
         toast(`Showing check from ${formatCheckTime(check)}.`);
       } else {
-        // Old entry without full data — show what we have and prompt re-run
-        toast(`No full data for this entry — please re-run the assessment.`, 'error');
+        toast(`This old check has no full result. Please run it again.`, 'error');
       }
-    })
-  );
+  }
+
+  tbody.querySelectorAll('.recent-check-row').forEach(row => {
+    row.addEventListener('click', () => openCheck(row));
+    row.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      openCheck(row);
+    });
+  });
 }
 
 document.getElementById('clearHistory')?.addEventListener('click', () => {
   localStorage.removeItem(HISTORY_KEY);
   renderRecentChecks();
-  toast('History cleared.');
+  toast('Recent checks cleared.');
 });
 
 /* ==========================================================
@@ -530,7 +570,7 @@ function setLoading(btnId, on) {
 
 async function runAssessment(amount, horizon, triggeredBy, currency = selectedCurrency) {
   if (!amount || amount <= 0) {
-    toast('Enter a valid invoice amount.', 'error');
+    toast('Enter an invoice amount above zero.', 'error');
     return;
   }
   setLoading(triggeredBy, true);
@@ -549,7 +589,7 @@ async function runAssessment(amount, horizon, triggeredBy, currency = selectedCu
       body,
     });
   } catch {
-    toast('Network error — is the backend running?', 'error');
+    toast('Cannot connect to the service. Please try again.', 'error');
     setLoading(triggeredBy, false);
     return;
   }
@@ -558,7 +598,7 @@ async function runAssessment(amount, horizon, triggeredBy, currency = selectedCu
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    toast(err.detail ?? 'Risk assessment failed.', 'error');
+    toast(err.detail ?? 'Payment check failed. Please try again.', 'error');
     return;
   }
 
@@ -568,13 +608,6 @@ async function runAssessment(amount, horizon, triggeredBy, currency = selectedCu
   showScreen('results');
 }
 
-document.getElementById('quickAnalyze')?.addEventListener('click', () =>
-  runAssessment(
-    document.getElementById('quickAmount')?.value,
-    selectedHorizon,
-    'quickAnalyze'
-  )
-);
 document.getElementById('analyzeBtn')?.addEventListener('click', () =>
   runAssessment(
     document.getElementById('amount')?.value,
@@ -605,6 +638,11 @@ const DRIVER_PERCENTAGES = new Set([
   'volatility_7d', 'momentum_7d', 'spread_pct',
 ]);
 
+const RESULT_DRIVER_KEYS = new Set([
+  'return_7d', 'return_14d', 'volatility_7d',
+  'momentum_7d', 'depreciation_days_7d',
+]);
+
 function formatDriverValue(key, value, currency) {
   const number = Number(value);
   if (!Number.isFinite(number)) return String(value ?? '—');
@@ -618,40 +656,63 @@ function formatDriverValue(key, value, currency) {
 }
 
 const RISK_MEANINGS = {
-  Low: 'The rate has been relatively stable recently.',
-  Medium: 'The rate could make this payment moderately more expensive.',
-  High: 'The rate could make this payment noticeably more expensive.',
+  Low: 'The rate has not changed much recently.',
+  Medium: 'The rate may make this payment more expensive.',
+  High: 'The payment could cost much more if the rate changes.',
 };
+
+function getDecisionSupportConsiderations(result) {
+  if (Array.isArray(result.considerations) && result.considerations.length) {
+    return result.considerations;
+  }
+
+  const currency = result.currency ?? 'foreign currency';
+  const pair = result.currency ? `${result.currency}/RWF` : 'exchange-rate';
+  if (result.risk_level === 'High') {
+    return [
+      `Recent ${pair} changes point to a higher chance of added cost during this check period.`,
+      `The estimated extra cost shows the possible effect of a more expensive ${currency} under the planning scenario.`,
+      'Payment timing, available cash and supplier terms remain business factors to weigh.',
+    ];
+  }
+  if (result.risk_level === 'Medium') {
+    return [
+      `Recent ${pair} changes point to a moderate chance of added cost during this check period.`,
+      'The estimated extra cost is a planning scenario, not a guaranteed future cost.',
+      'Payment timing, available cash and supplier terms remain business factors to weigh.',
+    ];
+  }
+  return [
+    `Recent ${pair} rates have been fairly stable compared with the model's past data.`,
+    'A Low result does not mean the rate will stay unchanged.',
+    'The current cost and estimated extra cost can be weighed alongside cash needs and supplier terms.',
+  ];
+}
 
 function renderResult(r) {
   hide('emptyResult');    show('resultContent');
   hide('emptyDecision');  show('decisionContent');
+  show('exportBar');
 
   /* Risk card */
   const riskEl = document.getElementById('riskLevel');
   if (riskEl) {
     riskEl.textContent = r.risk_level;
-    riskEl.className   = `summary-value risk-${r.risk_level}`;
+    riskEl.className   = 'result-risk-value';
   }
-  const summaryRisk = document.querySelector('.summary-risk');
-  if (summaryRisk) summaryRisk.className = `summary-card summary-risk level-${r.risk_level}`;
+  const resultHero = document.getElementById('resultHero');
+  if (resultHero) resultHero.className = `result-hero level-${r.risk_level}`;
 
-  setText('riskMeaning',     RISK_MEANINGS[r.risk_level] ?? 'Review the recent rate information carefully.');
+  setText('riskMeaning',     RISK_MEANINGS[r.risk_level] ?? 'Recent rate information is shown below.');
   setText('currentCost',     `RWF ${fmt(r.current_cost_rwf)}`);
   setText('currentRateText', `At today's rate of ${fmtRate(r.current_rate, r.currency)} RWF per ${r.currency}`);
   setText('extraCost',       `RWF ${fmt(r.possible_extra_cost_rwf)}`);
-
-  const confidence = r.confidence_score ?? r.confidence ?? 0;
-  const topLabel   = r.top_probability_label ?? r.risk_level;
-  const topProb    = r.predicted_probability ?? confidence;
-  setText('confidenceText',
-    `Strength of this result: ${pct(confidence)}. The information points most strongly to ${topLabel} risk (${pct(topProb)}).`
-  );
 
   /* Key drivers */
   const driversEl = document.getElementById('drivers');
   if (driversEl) {
     driversEl.innerHTML = Object.entries(r.key_drivers ?? {})
+      .filter(([key]) => RESULT_DRIVER_KEYS.has(key))
       .map(([k, v]) =>
         `<div class="driver-row">
            <span>${DRIVER_LABELS[k] ?? k.replaceAll('_',' ')}</span>
@@ -660,15 +721,12 @@ function renderResult(r) {
       ).join('');
   }
 
-  /* Recommendations */
-  const recHtml = (r.recommendations ?? [])
+  /* Decision-support considerations */
+  const recHtml = getDecisionSupportConsiderations(r)
     .map(x => `<div class="rec-item ${r.risk_level}">${x}</div>`)
     .join('');
   setHTML('resultRecommendations', recHtml);
   setHTML('decisionRecommendations', recHtml);
-
-  /* Probability chart */
-  renderProbChart(r.class_probabilities ?? {});
 
   /* Scenario table */
   const amount = r.amount ?? r.amount_currency ?? r.amount_usd;
@@ -677,67 +735,15 @@ function renderResult(r) {
     <tr><td>Payment amount</td>     <td>${symbol} ${fmt(amount)} ${r.currency}</td></tr>
     <tr><td>Current rate</td>        <td>${fmtRate(r.current_rate, r.currency)} RWF / ${r.currency}</td></tr>
     <tr><td>Cost at current rate</td><td>RWF ${fmt(r.current_cost_rwf)}</td></tr>
-    <tr><td>Possible added cost</td>
+    <tr><td>Possible extra cost</td>
         <td style="color:var(--red-500)">RWF ${fmt(r.possible_extra_cost_rwf)}</td></tr>
-    <tr><td>Suggested safety buffer</td>
-        <td style="color:var(--amber-700)">RWF ${fmt(r.suggested_margin_buffer_rwf)}</td></tr>
+    <tr><td>Planning buffer estimate</td>
+        <td style="color:var(--amber-700)">RWF ${fmt(r.planning_buffer_estimate_rwf ?? r.suggested_margin_buffer_rwf)}</td></tr>
   `);
   setText('disclaimer',
     `This estimate uses the current BNR rate for ${r.currency}/RWF and a cautious estimate of possible extra cost. ` +
-    'It is for planning only — not a guaranteed future rate.'
+    'Use this estimate for planning only. The future rate may be different.'
   );
-}
-
-function renderProbChart(probs) {
-  const canvas = document.getElementById('probChart');
-  if (!canvas) return;
-  if (probChart) { probChart.destroy(); probChart = null; }
-  if (typeof Chart === 'undefined') return;
-
-  const labels = Object.keys(probs);
-  const values = Object.values(probs).map(p => +(p * 100).toFixed(1));
-  const colors = {
-    Low:    { bg:'rgba(12,166,120,0.85)',  border:'#0ca678' },
-    Medium: { bg:'rgba(245,159,0,0.85)',   border:'#f59f00' },
-    High:   { bg:'rgba(250,82,82,0.85)',   border:'#fa5252' },
-  };
-
-  probChart = new Chart(canvas, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        data: values,
-        backgroundColor: labels.map(l => (colors[l] ?? colors.Low).bg),
-        borderColor:     labels.map(l => (colors[l] ?? colors.Low).border),
-        borderWidth: 1,
-        borderRadius: 6,
-      }],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          displayColors: false,
-          backgroundColor: '#1a1f2e',
-          titleColor: '#a0aec0',
-          bodyColor: '#fff',
-          padding: 10, cornerRadius: 8,
-          callbacks: { label: item => `${item.parsed.y}%` },
-        },
-      },
-      scales: {
-        x: { grid:{display:false}, border:{display:false}, ticks:{color:'#718096', font:{size:12}} },
-        y: {
-          beginAtZero: true, max: 100,
-          grid:{color:'rgba(0,0,0,0.05)'}, border:{display:false},
-          ticks: { maxTicksLimit:5, color:'#718096', font:{size:11}, callback: v=>`${v}%` },
-        },
-      },
-    },
-  });
 }
 
 /* ==========================================================
@@ -761,13 +767,13 @@ document.addEventListener('keydown', e => {
 
 /* --- Print / Save as PDF --------------------------------- */
 document.getElementById('printBtn').addEventListener('click', () => {
-  if (!latestResult) { toast('Run an assessment first.', 'error'); return; }
+  if (!latestResult) { toast('Run a payment check first.', 'error'); return; }
   window.print();
 });
 
 /* --- Download Excel workbook ----------------------------- */
 document.getElementById('downloadExcelBtn').addEventListener('click', async () => {
-  if (!latestResult) { toast('Run an assessment first.', 'error'); return; }
+  if (!latestResult) { toast('Run a payment check first.', 'error'); return; }
   const r = latestResult;
   try {
     const response = await fetch(`${API}/api/export-excel`, {
@@ -784,7 +790,7 @@ document.getElementById('downloadExcelBtn').addEventListener('click', async () =
     const url = URL.createObjectURL(blob);
     triggerDownload(url, `fxguard-result-${r.analysis_date}.xlsx`);
     setTimeout(() => URL.revokeObjectURL(url), 5000);
-    toast('Excel workbook downloaded.', 'success');
+    toast('Excel file downloaded.', 'success');
   } catch (error) {
     console.error('Excel export failed:', error);
     toast('Could not create the Excel workbook. Please try again.', 'error');
@@ -793,14 +799,14 @@ document.getElementById('downloadExcelBtn').addEventListener('click', async () =
 
 /* --- Download HTML report -------------------------------- */
 document.getElementById('downloadHtmlBtn').addEventListener('click', () => {
-  if (!latestResult) { toast('Run an assessment first.', 'error'); return; }
+  if (!latestResult) { toast('Run a payment check first.', 'error'); return; }
   const r    = latestResult;
   const date = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' });
 
   const riskColor = { Low: '#0ca678', Medium: '#f59f00', High: '#fa5252' }[r.risk_level] ?? '#3b5bdb';
   const riskBg    = { Low: '#e6fcf5', Medium: '#fff9db', High: '#fff5f5'  }[r.risk_level] ?? '#eff4ff';
 
-  const recsHtml = (r.recommendations ?? [])
+  const recsHtml = getDecisionSupportConsiderations(r)
     .map(rec => `<li style="margin-bottom:6px">${rec}</li>`).join('');
 
   const driversHtml = Object.entries(r.key_drivers ?? {})
@@ -835,7 +841,7 @@ document.getElementById('downloadHtmlBtn').addEventListener('click', () => {
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>FXGuard AI — Risk Assessment Report</title>
+  <title>FXGuard AI — Payment Check Report</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Segoe UI',Inter,system-ui,sans-serif;font-size:14px;color:#1a1f2e;background:#f4f6f9;padding:32px}
@@ -863,15 +869,15 @@ document.getElementById('downloadHtmlBtn').addEventListener('click', () => {
 <body>
 <div class="page">
   <div class="header">
-    <h1>FXGuard AI — Risk Assessment Report</h1>
-    <p>Generated ${date} &nbsp;·&nbsp; ${r.currency} / RWF &nbsp;·&nbsp; ${r.horizon_days}-day outlook</p>
+    <h1>FXGuard AI — Payment Check Report</h1>
+    <p>Created ${date} &nbsp;·&nbsp; ${r.currency} / RWF &nbsp;·&nbsp; ${r.horizon_days}-day check</p>
   </div>
   <div class="body">
     <div class="cards">
       <div class="card risk-card">
         <div class="card-label">Risk level</div>
         <div class="card-value risk-value">${r.risk_level}</div>
-        <div class="card-sub">${r.horizon_days}-day outlook</div>
+        <div class="card-sub">${r.horizon_days}-day check</div>
       </div>
       <div class="card">
         <div class="card-label">Cost at current rate</div>
@@ -879,7 +885,7 @@ document.getElementById('downloadHtmlBtn').addEventListener('click', () => {
         <div class="card-sub">At ${fmtRate(r.current_rate, r.currency)} RWF/${r.currency}</div>
       </div>
       <div class="card">
-        <div class="card-label">Possible added cost</div>
+        <div class="card-label">Possible extra cost</div>
         <div class="card-value" style="font-family:monospace;font-size:17px;color:#fa5252">RWF ${fmt(r.possible_extra_cost_rwf)}</div>
         <div class="card-sub">A cautious estimate if the rate changes</div>
       </div>
@@ -892,20 +898,20 @@ document.getElementById('downloadHtmlBtn').addEventListener('click', () => {
             <td style="padding:8px 12px;border-bottom:1px solid #e3e7ed;font-family:monospace">${r.currency_symbol ?? r.currency} ${fmt(r.amount ?? r.amount_currency ?? r.amount_usd)} ${r.currency}</td></tr>
         <tr><td style="padding:8px 12px;border-bottom:1px solid #e3e7ed;color:#718096">Current rate</td>
             <td style="padding:8px 12px;border-bottom:1px solid #e3e7ed;font-family:monospace">${fmtRate(r.current_rate, r.currency)} RWF / ${r.currency}</td></tr>
-        <tr><td style="padding:8px 12px;border-bottom:1px solid #e3e7ed;color:#718096">Safety buffer</td>
-            <td style="padding:8px 12px;border-bottom:1px solid #e3e7ed;font-family:monospace;color:#b37400">RWF ${fmt(r.suggested_margin_buffer_rwf)}</td></tr>
-        <tr><td style="padding:8px 12px;color:#718096">Strength of this result</td>
+        <tr><td style="padding:8px 12px;border-bottom:1px solid #e3e7ed;color:#718096">Planning buffer estimate</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #e3e7ed;font-family:monospace;color:#b37400">RWF ${fmt(r.planning_buffer_estimate_rwf ?? r.suggested_margin_buffer_rwf)}</td></tr>
+        <tr><td style="padding:8px 12px;color:#718096">How sure this check is</td>
             <td style="padding:8px 12px;font-family:monospace">${pct(r.confidence_score ?? r.confidence ?? 0)}</td></tr>
       </table>
     </div>
 
     <div class="section">
-      <div class="section-title">Recommendations</div>
+      <div class="section-title">Payment tips</div>
       <ul class="rec-list">${recsHtml}</ul>
     </div>
 
     <div class="section">
-      <div class="section-title">How strongly each risk level is supported</div>
+      <div class="section-title">How likely each risk level is</div>
       ${probsHtml}
     </div>
 
@@ -915,7 +921,7 @@ document.getElementById('downloadHtmlBtn').addEventListener('click', () => {
     </div>
   </div>
   <div class="footer">
-    ${r.disclaimer ?? 'FXGuard AI provides decision support only. It is not guaranteed financial, forex trading, or professional investment advice.'}
+    ${r.disclaimer ?? 'This check is decision support only. It shows estimates and does not recommend when or how to pay.'}
   </div>
 </div>
 </body>
@@ -925,7 +931,7 @@ document.getElementById('downloadHtmlBtn').addEventListener('click', () => {
   const url2  = URL.createObjectURL(blob2);
   triggerDownload(url2, `fxguard-report-${r.analysis_date}.html`);
   setTimeout(() => URL.revokeObjectURL(url2), 5000);
-  toast('Report downloaded — open in any browser.', 'success');
+  toast('Report downloaded. Open it in any browser.', 'success');
 });
 
 /* --- Helper: trigger a browser file download ------------- */
@@ -945,11 +951,9 @@ function triggerDownload(dataUrl, filename) {
 function updateCurrencyCopy(currency) {
   const info = currencyCatalog[currency];
   if (!info) return;
-  setText('pairEyebrow', `${currency} / RWF · Decision support`);
+  setText('pairEyebrow', `${currency} / RWF · Plan supplier payments`);
   setText('chartTitle', `${currency} / RWF — rate trend`);
-  setText('chartDescription', `BNR reference rates. Higher values mean each ${currency} costs more RWF.`);
-  setText('quickAmountLabel', `Invoice amount (${currency})`);
-  setText('quickAmountPrefix', info.symbol);
+  setText('chartDescription', `If this number goes up, you need more RWF to buy 1 ${currency}.`);
   setText('amountLabel', `Invoice amount (${currency})`);
   setText('amountPrefix', info.symbol);
   setText('assessmentPair', `${currency} / RWF`);
@@ -971,8 +975,9 @@ async function selectCurrency(currency) {
   setText('badgeRate', '—');
   setText('badgeDate', 'Loading…');
   setText('assessmentSource', 'Loading…');
-  setText('kpiModel7', 'Loading…');
-  setText('kpiModel14', 'Loading…');
+  const historyRequest = drawHistory(currentDays).catch(error => {
+    console.error('Rate history load failed:', error);
+  });
 
   try {
     const [latestResponse, freshnessResponse] = await Promise.all([
@@ -984,23 +989,24 @@ async function selectCurrency(currency) {
     if (currency !== selectedCurrency) return;
 
     populateRateUI(latest);
-    populateModelUI(modelMetadata, currency);
     setStatus(freshness);
     showStaleBanner(freshness);
 
     /* Badge freshness label */
     const ageLabel = {
-      fresh: `Fresh · ${freshness.days_since_latest_rate}d old`,
-      aging: `Aging · ${freshness.days_since_latest_rate}d old`,
-      stale: `Stale · ${freshness.days_since_latest_rate}d old`,
+      fresh: `Updated · ${freshness.days_since_latest_rate} days ago`,
+      aging: `Last update · ${freshness.days_since_latest_rate} days ago`,
+      stale: `Old rate · ${freshness.days_since_latest_rate} days ago`,
     }[freshness.status] ?? freshness.latest_rate_date;
     setText('badgeDate', ageLabel);
-
-    await drawHistory(currentDays);
   } catch (err) {
     console.error('Currency load failed:', err);
-    toast(`Could not load ${currency}/RWF data.`, 'error');
+    setStatus(null);
+    setText('badgeDate', 'Rate date unavailable');
+    toast(`Could not load ${currency}/RWF rates. Please try again.`, 'error');
   }
+
+  await historyRequest;
 }
 
 document.getElementById('activeCurrency')?.addEventListener('change', event => {
@@ -1035,36 +1041,30 @@ function installCurrencyCatalog(payload) {
     });
     select.replaceChildren(...options);
   }
-
-  const codes = Object.keys(currencyCatalog);
-  setText('kpiCoverageValue', `${codes.length} ${codes.length === 1 ? 'currency' : 'currencies'}`);
-  setText('kpiCoverageSub', `${codes.join(', ')} against RWF`);
+  updateCurrencyCopy(selectedCurrency);
 }
 
 async function init() {
-  try {
-    const [currencyResponse, metadataResponse] = await Promise.all([
-      fetch(`${API}/api/currencies`),
-      fetch(`${API}/api/model-metadata`),
-    ]);
-    if (!currencyResponse.ok) throw new Error('Supported currencies request failed');
-    if (!metadataResponse.ok) throw new Error('Model metadata request failed');
-    const [currencyPayload, metadataPayload] = await Promise.all([
-      currencyResponse.json(),
-      metadataResponse.json(),
-    ]);
-    installCurrencyCatalog(currencyPayload);
-    modelMetadata = metadataPayload;
-    renderRecentChecks();
-    const savedCurrency = localStorage.getItem('fxguard_currency');
-    const initialCurrency = currencyCatalog[savedCurrency]
-      ? savedCurrency
-      : Object.keys(currencyCatalog)[0];
-    await selectCurrency(initialCurrency);
-  } catch (err) {
-    console.error('Init failed:', err);
-    toast('Could not load data — is the backend running?', 'error');
-  }
+  renderRecentChecks();
+  const savedCurrency = localStorage.getItem('fxguard_currency');
+  const initialCurrency = currencyCatalog[savedCurrency]
+    ? savedCurrency
+    : Object.keys(currencyCatalog)[0];
+
+  const currencyDataRequest = selectCurrency(initialCurrency);
+  const catalogRequest = (async () => {
+    try {
+      const currencyResponse = await fetch(`${API}/api/currencies`);
+      if (!currencyResponse.ok) throw new Error('Supported currencies request failed');
+      const currencyPayload = await currencyResponse.json();
+      installCurrencyCatalog(currencyPayload);
+    } catch (err) {
+      console.info('Using the built-in currency list:', err);
+    }
+  })();
+
+  await Promise.allSettled([currencyDataRequest, catalogRequest]);
+  loadChartLibraryWhenIdle();
 }
 
 init();

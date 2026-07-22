@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import mimetypes
 import os
 import urllib.error
 import urllib.request
@@ -15,8 +16,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from openpyxl import Workbook
-from openpyxl.styles import Alignment, Font, PatternFill
 from pydantic import BaseModel, Field
 
 from backend.app.rates import (
@@ -56,6 +55,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+mimetypes.add_type("font/woff2", ".woff2")
 
 if FRONTEND_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
@@ -178,24 +179,24 @@ def latest_feature_row():
     return required.iloc[-1]
 
 
-def risk_guidance(risk: str, currency: str = "USD") -> List[str]:
+def risk_considerations(risk: str, currency: str = "USD") -> List[str]:
     pair = f"{currency}/RWF"
     if risk == "High":
         return [
-            "If funds are available, consider paying the supplier earlier so a rate increase has less effect.",
-            "If the invoice is large, consider splitting it into smaller payments instead of paying it all at once.",
-            "Set aside extra money or adjust your selling price before confirming customer quotes.",
+            f"Recent {pair} changes point to a higher chance of added cost during this check period.",
+            f"The estimated extra cost shows the possible effect of a more expensive {currency} under the planning scenario.",
+            "Payment timing, available cash and supplier terms remain business factors to weigh.",
         ]
     if risk == "Medium":
         return [
-            f"Check the {pair} rate again before the payment date.",
-            "Set aside a small extra amount in case the foreign currency becomes more expensive.",
-            "If the invoice is large, consider paying part of it earlier.",
+            f"Recent {pair} changes point to a moderate chance of added cost during this check period.",
+            "The estimated extra cost is a planning scenario, not a guaranteed future cost.",
+            "Payment timing, available cash and supplier terms remain business factors to weigh.",
         ]
     return [
-        "Recent rates look fairly stable, but keep checking as the payment date approaches.",
-        "The planned payment date appears reasonable based on recent rate changes.",
-        "Check the rate again if the payment is delayed.",
+        f"Recent {pair} rates have been fairly stable compared with the model's past data.",
+        "A Low result does not mean the rate will stay unchanged.",
+        "The current cost and estimated extra cost can be weighed alongside cash needs and supplier terms.",
     ]
 
 
@@ -377,7 +378,8 @@ def predict_risk(req: RiskRequest):
     current_cost = req.amount * current_rate
     pressure_rate = risk_pressure_rate(risk, req.horizon)
     possible_extra_cost = current_cost * pressure_rate
-    suggested_buffer = current_cost * max(pressure_rate, 0.0025)
+    planning_buffer = current_cost * max(pressure_rate, 0.0025)
+    considerations = risk_considerations(risk, currency)
 
     return {
         "currency": currency,
@@ -400,7 +402,7 @@ def predict_risk(req: RiskRequest):
         "probability_distribution": probabilities,
         "assumed_pressure_rate": pressure_rate,
         "possible_extra_cost_rwf": round(possible_extra_cost, 2),
-        "suggested_margin_buffer_rwf": round(suggested_buffer, 2),
+        "planning_buffer_estimate_rwf": round(planning_buffer, 2),
         "key_drivers": {
             "daily_return": round(float(row["daily_return"]), 6),
             "return_7d": round(float(row["return_7d"]), 6),
@@ -413,14 +415,19 @@ def predict_risk(req: RiskRequest):
             "spread_pct": round(float(row["spread_pct"]), 6),
             "depreciation_days_7d": int(row["depreciation_days_7d"]),
         },
-        "recommendations": risk_guidance(risk, currency),
+        "considerations": considerations,
         "rate_source": str(row.get("source", "BNR reference-rate dataset")),
         "rate_type": str(row.get("rate_type", "BNR reference rate")),
-        "disclaimer": "FXGuard AI provides decision support only. It is not guaranteed financial, forex trading, or professional investment advice.",
+        "disclaimer": "This payment check is decision support only. It shows estimates based on recent and past rates; it does not recommend when or how to pay and cannot promise a future rate.",
     }
 
 
 def build_excel_report(result: dict) -> BytesIO:
+    # Spreadsheet support is export-only. Import it here so it does not slow
+    # the API's cold start or the first dashboard request.
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = "Risk Assessment"
@@ -428,11 +435,11 @@ def build_excel_report(result: dict) -> BytesIO:
     sheet.column_dimensions["A"].width = 36
     sheet.column_dimensions["B"].width = 74
 
-    title_fill = PatternFill("solid", fgColor="1C3BAB")
-    section_fill = PatternFill("solid", fgColor="DBE4FF")
-    header_fill = PatternFill("solid", fgColor="EFF4FF")
+    title_fill = PatternFill("solid", fgColor="102A46")
+    section_fill = PatternFill("solid", fgColor="F5CA52")
+    header_fill = PatternFill("solid", fgColor="FFF2B6")
 
-    sheet.append(["FXGUARD AI — RISK ASSESSMENT REPORT"])
+    sheet.append(["FXGUARD AI — PAYMENT CHECK REPORT"])
     sheet.merge_cells("A1:B1")
     sheet["A1"].fill = title_fill
     sheet["A1"].font = Font(color="FFFFFF", bold=True, size=15)
@@ -445,7 +452,7 @@ def build_excel_report(result: dict) -> BytesIO:
         row_number = sheet.max_row
         sheet.merge_cells(start_row=row_number, start_column=1, end_row=row_number, end_column=2)
         sheet.cell(row_number, 1).fill = section_fill
-        sheet.cell(row_number, 1).font = Font(color="1C3BAB", bold=True)
+        sheet.cell(row_number, 1).font = Font(color="102A46", bold=True)
         sheet.append(list(headings))
         for cell in sheet[sheet.max_row]:
             cell.fill = header_fill
@@ -454,17 +461,17 @@ def build_excel_report(result: dict) -> BytesIO:
     amount = result.get("amount", result.get("amount_currency"))
     add_section("SUMMARY", ("Field", "Value"))
     summary_rows = [
-        ("Date generated", datetime.now().strftime("%d %B %Y")),
-        ("Analysis date (BNR data)", result["analysis_date"]),
-        ("Currency pair", result["pair"]),
+        ("Date created", datetime.now().strftime("%d %B %Y")),
+        ("BNR rate date", result["analysis_date"]),
+        ("Currency", result["pair"]),
         (f"Payment amount ({result['currency']})", amount),
-        ("Planning horizon (days)", result["horizon_days"]),
+        ("Check period (days)", result["horizon_days"]),
         (f"Current rate (RWF per {result['currency']})", result["current_rate"]),
         ("Risk level", result["risk_level"]),
-        ("Strength of this result", result.get("confidence_score", result.get("confidence"))),
+        ("How sure this check is", result.get("confidence_score", result.get("confidence"))),
         ("Cost at current rate (RWF)", result["current_cost_rwf"]),
         ("Possible extra cost (RWF)", result["possible_extra_cost_rwf"]),
-        ("Suggested safety buffer (RWF)", result["suggested_margin_buffer_rwf"]),
+        ("Planning buffer estimate (RWF)", result["planning_buffer_estimate_rwf"]),
         ("Rate source", result["rate_source"]),
     ]
     for label, value in summary_rows:
@@ -472,21 +479,21 @@ def build_excel_report(result: dict) -> BytesIO:
     for row_number in range(7, sheet.max_row + 1):
         label = sheet.cell(row_number, 1).value
         value_cell = sheet.cell(row_number, 2)
-        if label == "Strength of this result":
+        if label == "How sure this check is":
             value_cell.number_format = "0.0%"
         elif label and ("amount" in label.lower() or "rate" in label.lower() or "cost" in label.lower() or "buffer" in label.lower()):
             value_cell.number_format = "#,##0.00"
 
-    add_section("HOW STRONGLY EACH RISK LEVEL IS SUPPORTED", ("Risk level", "Support"))
+    add_section("HOW LIKELY EACH RISK LEVEL IS", ("Risk level", "Chance"))
     for risk_class, probability in sorted(
         result.get("class_probabilities", {}).items(), key=lambda item: item[1], reverse=True
     ):
         sheet.append([risk_class, probability])
         sheet.cell(sheet.max_row, 2).number_format = "0.0%"
 
-    add_section("RECOMMENDATIONS", ("#", "Action"))
-    for index, recommendation in enumerate(result.get("recommendations", []), start=1):
-        sheet.append([index, recommendation])
+    add_section("PAYMENT TIPS", ("#", "What you may consider"))
+    for index, consideration in enumerate(result.get("considerations", []), start=1):
+        sheet.append([index, consideration])
         sheet.cell(sheet.max_row, 2).alignment = Alignment(wrap_text=True, vertical="top")
 
     plain_driver_labels = {
@@ -519,7 +526,7 @@ def build_excel_report(result: dict) -> BytesIO:
         sheet.append([plain_driver_labels.get(signal, signal.replace("_", " ").title()), display_value])
 
     add_section("IMPORTANT NOTE", ("Notice", "Details"))
-    sheet.append(["Decision support only", result["disclaimer"]])
+    sheet.append(["For planning only", result["disclaimer"]])
     sheet.cell(sheet.max_row, 2).alignment = Alignment(wrap_text=True, vertical="top")
 
     output = BytesIO()
