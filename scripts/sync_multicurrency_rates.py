@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from datetime import date
 from pathlib import Path
 
@@ -23,6 +24,11 @@ RAW_FILES = {
 }
 CURRENCIES = tuple(RAW_FILES)
 RAW_COLUMNS = {"currency_name", "buying_rate", "average_rate", "selling_rate", "post_date"}
+ADDITIONAL_FILE_PATTERN = re.compile(
+    r"^(USD|EUR|KES) additional "
+    r"(\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})\.xlsx$",
+    re.IGNORECASE,
+)
 
 
 def file_sha256(path: Path) -> str:
@@ -82,9 +88,67 @@ def load_raw_workbook(currency: str, path: Path) -> pd.DataFrame:
     return result.sort_values("date").reset_index(drop=True)
 
 
-def load_direct_observations() -> pd.DataFrame:
-    frames = [load_raw_workbook(currency, path) for currency, path in RAW_FILES.items()]
-    ranges = {(str(frame["date"].min().date()), str(frame["date"].max().date())) for frame in frames}
+def discover_raw_files() -> dict[str, list[Path]]:
+    """Return each baseline workbook plus strictly named supplementary exports."""
+    discovered = {currency: [path] for currency, path in RAW_FILES.items()}
+    for path in sorted(RAW_DIR.glob("*.xlsx")):
+        if "additional" not in path.name.lower():
+            continue
+        match = ADDITIONAL_FILE_PATTERN.fullmatch(path.name)
+        if not match:
+            raise RuntimeError(
+                f"Additional workbook has an invalid filename: {path.name}. "
+                "Use '<CURRENCY> additional YYYY-MM-DD to YYYY-MM-DD.xlsx'."
+            )
+        currency = match.group(1).upper()
+        discovered[currency].append(path)
+    return discovered
+
+
+def load_currency_observations(currency: str, paths: list[Path]) -> pd.DataFrame:
+    """Validate and merge all official workbooks for one currency."""
+    frames = []
+    for path in paths:
+        frame = load_raw_workbook(currency, path)
+        match = ADDITIONAL_FILE_PATTERN.fullmatch(path.name)
+        if match:
+            filename_start = pd.Timestamp(match.group(2))
+            filename_end = pd.Timestamp(match.group(3))
+            content_start = frame["date"].min()
+            content_end = frame["date"].max()
+            if filename_start != content_start or filename_end != content_end:
+                raise RuntimeError(
+                    f"{path.name} says {filename_start.date()} to {filename_end.date()}, "
+                    f"but its content covers {content_start.date()} to {content_end.date()}."
+                )
+        frame["_raw_file"] = path.name
+        frames.append(frame)
+
+    combined = pd.concat(frames, ignore_index=True)
+    duplicate_dates = combined.loc[
+        combined["date"].duplicated(keep=False), ["date", "_raw_file"]
+    ].sort_values(["date", "_raw_file"])
+    if not duplicate_dates.empty:
+        details = "; ".join(
+            f"{observed_date.date()}: {', '.join(group['_raw_file'].tolist())}"
+            for observed_date, group in duplicate_dates.groupby("date")
+        )
+        raise RuntimeError(f"{currency} source workbooks contain duplicate dates: {details}")
+    return combined.drop(columns="_raw_file").sort_values("date").reset_index(drop=True)
+
+
+def load_direct_observations(
+    source_files: dict[str, list[Path]] | None = None,
+) -> pd.DataFrame:
+    source_files = source_files or discover_raw_files()
+    frames = [
+        load_currency_observations(currency, source_files[currency])
+        for currency in CURRENCIES
+    ]
+    ranges = {
+        (str(frame["date"].min().date()), str(frame["date"].max().date()))
+        for frame in frames
+    }
     if len(ranges) != 1:
         raise RuntimeError(f"The BNR workbooks do not use the same date range: {sorted(ranges)}")
     return pd.concat(frames, ignore_index=True).sort_values(["currency", "date"]).reset_index(drop=True)
@@ -161,7 +225,8 @@ def add_currency_labels(features: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
 
 
 def main() -> None:
-    observations = load_direct_observations()
+    source_files = discover_raw_files()
+    observations = load_direct_observations(source_files)
     daily = build_daily_calendar(observations)
     features = pd.concat(
         [add_features(daily.loc[daily["currency"] == currency]) for currency in CURRENCIES],
@@ -201,18 +266,24 @@ def main() -> None:
         "source_url": BNR_SOURCE_URL,
         "delivery_mode": "manual official export",
         "currencies": list(CURRENCIES),
-        "raw_files": {
-            currency: {
-                "filename": path.name,
-                "sha256": file_sha256(path),
-                "rows": coverage[currency]["official_observations"],
-            }
-            for currency, path in RAW_FILES.items()
-        },
         "coverage": coverage,
         "first_date": str(observations["date"].min().date()),
         "latest_date": str(observations["date"].max().date()),
         "label_thresholds": thresholds,
+    }
+    metadata["raw_files"] = {
+        currency: [
+            {
+                "filename": path.name,
+                "sha256": file_sha256(path),
+                "rows": int(len(frame)),
+                "first_date": str(frame["date"].min().date()),
+                "latest_date": str(frame["date"].max().date()),
+            }
+            for path in paths
+            for frame in [load_raw_workbook(currency, path)]
+        ]
+        for currency, paths in source_files.items()
     }
     (DATA_DIR / "multicurrency_data_metadata.json").write_text(
         json.dumps(metadata, indent=2), encoding="utf-8"

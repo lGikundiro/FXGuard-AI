@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-18",
+  "generated_at": "2026-07-27",
   "source": "Direct National Bank of Rwanda Excel exports",
   "source_url": "https://www.bnr.rw/exchangeRate",
   "delivery_mode": "manual official export",
@@ -8,63 +8,96 @@
     "EUR",
     "KES"
   ],
-  "raw_files": {
-    "USD": {
-      "filename": "USD exchange history.xlsx",
-      "sha256": "13ec6f807cc61d14381903803fd4a57f6c46227024348b2f5c37db904e7a7b4d",
-      "rows": 1110
-    },
-    "EUR": {
-      "filename": "Euro exchange history.xlsx",
-      "sha256": "0fb4d33f7e0f77c8fdabf4ee097ed193ca40417a0526170c45c3b4d2c63b95c3",
-      "rows": 1110
-    },
-    "KES": {
-      "filename": "KES exchange hsitroy.xlsx",
-      "sha256": "3cad08a9ff9923eaa5cb42a03c093858f671a7f463f08ed398600fa5a1460eb1",
-      "rows": 1110
-    }
-  },
   "coverage": {
     "EUR": {
       "first_date": "2022-01-04",
-      "latest_date": "2026-07-17",
-      "official_observations": 1110,
+      "latest_date": "2026-07-27",
+      "official_observations": 1116,
       "source": "National Bank of Rwanda Excel export"
     },
     "KES": {
       "first_date": "2022-01-04",
-      "latest_date": "2026-07-17",
-      "official_observations": 1110,
+      "latest_date": "2026-07-27",
+      "official_observations": 1116,
       "source": "National Bank of Rwanda Excel export"
     },
     "USD": {
       "first_date": "2022-01-04",
-      "latest_date": "2026-07-17",
-      "official_observations": 1110,
+      "latest_date": "2026-07-27",
+      "official_observations": 1116,
       "source": "National Bank of Rwanda Excel export"
     }
   },
   "first_date": "2022-01-04",
-  "latest_date": "2026-07-17",
+  "latest_date": "2026-07-27",
   "label_thresholds": {
     "USD": {
-      "7d_low_max": 0.001406516951591108,
-      "7d_medium_max": 0.002564736702298065,
-      "14d_low_max": 0.0028341812959313817,
-      "14d_medium_max": 0.00519416519715823
+      "7d_low_max": 0.0013982075755660794,
+      "7d_medium_max": 0.002559074766524683,
+      "14d_low_max": 0.002807729514191948,
+      "14d_medium_max": 0.005178646083642803
     },
     "EUR": {
-      "7d_low_max": 0.001331519587732588,
-      "7d_medium_max": 0.008980066603443372,
-      "14d_low_max": 0.0026406734449495595,
-      "14d_medium_max": 0.014495210646774614
+      "7d_low_max": 0.001230309710912758,
+      "7d_medium_max": 0.008949082561805403,
+      "14d_low_max": 0.002518121996143874,
+      "14d_medium_max": 0.014494317435696714
     },
     "KES": {
-      "7d_low_max": 0.0002453075704211827,
-      "7d_medium_max": 0.002129758222632505,
-      "14d_low_max": 0.0005831382476919611,
-      "14d_medium_max": 0.0042618192138736966
+      "7d_low_max": 0.00023128584852605272,
+      "7d_medium_max": 0.0021248752134505728,
+      "14d_low_max": 0.0005720331895006092,
+      "14d_medium_max": 0.004247455235620564
     }
+  },
+  "raw_files": {
+    "USD": [
+      {
+        "filename": "USD exchange history.xlsx",
+        "sha256": "13ec6f807cc61d14381903803fd4a57f6c46227024348b2f5c37db904e7a7b4d",
+        "rows": 1110,
+        "first_date": "2022-01-04",
+        "latest_date": "2026-07-17"
+      },
+      {
+        "filename": "USD additional 2026-07-20 to 2026-07-27.xlsx",
+        "sha256": "16381f57d10be4872358c7af3c769324c3249181043540f8ef2c0a98bd76faf2",
+        "rows": 6,
+        "first_date": "2026-07-20",
+        "latest_date": "2026-07-27"
+      }
+    ],
+    "EUR": [
+      {
+        "filename": "Euro exchange history.xlsx",
+        "sha256": "0fb4d33f7e0f77c8fdabf4ee097ed193ca40417a0526170c45c3b4d2c63b95c3",
+        "rows": 1110,
+        "first_date": "2022-01-04",
+        "latest_date": "2026-07-17"
+      },
+      {
+        "filename": "EUR additional 2026-07-20 to 2026-07-27.xlsx",
+        "sha256": "cc557faec89ff07df275035f42b7aed426825b0443f992811df89fbe91f9b1dd",
+        "rows": 6,
+        "first_date": "2026-07-20",
+        "latest_date": "2026-07-27"
+      }
+    ],
+    "KES": [
+      {
+        "filename": "KES exchange hsitroy.xlsx",
+        "sha256": "3cad08a9ff9923eaa5cb42a03c093858f671a7f463f08ed398600fa5a1460eb1",
+        "rows": 1110,
+        "first_date": "2022-01-04",
+        "latest_date": "2026-07-17"
+      },
+      {
+        "filename": "KES additional 2026-07-20 to 2026-07-27.xlsx",
+        "sha256": "3d479f77b5c67a04b31fa2222536cc3cbcbda5fe68aab73bd8bec3006b7739e8",
+        "rows": 6,
+        "first_date": "2026-07-20",
+        "latest_date": "2026-07-27"
+      }
+    ]
   }
 }

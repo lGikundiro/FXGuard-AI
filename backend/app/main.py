@@ -4,20 +4,20 @@ import json
 import mimetypes
 import os
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from typing import List, Optional
 
-import joblib
-import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from backend.app.accounts import configured_origins, router as accounts_router
 from backend.app.rates import (
     CURRENCY_INFO,
     SUPPORTED_CURRENCIES,
@@ -35,6 +35,27 @@ FEEDBACK_DIR = ROOT / "reports" / "feedback"
 FEEDBACK_FILE = FEEDBACK_DIR / "prototype_feedback.xlsx"
 FEEDBACK_FORM_NAME = os.getenv("FEEDBACK_FORM_NAME", "FXGuard AI User feedback")
 GOOGLE_SHEETS_WEBHOOK_URL = os.getenv("GOOGLE_SHEETS_WEBHOOK_URL", "").strip()
+GOOGLE_FORM_RESPONSE_URL = os.getenv(
+    "GOOGLE_FORM_RESPONSE_URL",
+    (
+        "https://docs.google.com/forms/d/e/"
+        "1FAIpQLSd3E97VFGFl7v-9ojSAAmPc4RkE-30tf9YCJ_XUhPuw8JFbBg/formResponse"
+    ),
+).strip()
+GOOGLE_FORM_ENTRY_IDS = {
+    "clarity_rating": "entry.1987006101",
+    "usefulness_rating": "entry.1258240246",
+    "comment": "entry.770935896",
+    "participant_name": "entry.792416587",
+    "import_category": "entry.2052407924",
+    "phone_number": "entry.1877013245",
+}
+GOOGLE_FORM_IMPORT_CATEGORIES = {
+    "Raw materials",
+    "Minerals",
+    "Finished goods",
+    "Medicine",
+}
 
 FEATURE_COLUMNS = [
     "mid_rate", "daily_return", "return_7d", "return_14d", "ma_7", "ma_14", "ma_30",
@@ -50,11 +71,12 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=configured_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(accounts_router)
 
 mimetypes.add_type("font/woff2", ".woff2")
 
@@ -69,12 +91,12 @@ class RiskRequest(BaseModel):
 
 
 class FeedbackRequest(BaseModel):
-    participant_name: Optional[str] = None
-    import_category: Optional[str] = None
-    phone_number: Optional[str] = None
+    participant_name: Optional[str] = Field(default=None, max_length=100)
+    import_category: Optional[str] = Field(default=None, max_length=100)
+    phone_number: Optional[str] = Field(default=None, max_length=30)
     clarity_rating: int = Field(ge=1, le=5)
     usefulness_rating: int = Field(ge=1, le=5)
-    comment: Optional[str] = None
+    comment: str = Field(min_length=1, max_length=2000)
 
 
 FEEDBACK_COLUMNS = [
@@ -105,35 +127,66 @@ def project_path_label(path: Path) -> str:
 
 
 def append_feedback_to_google_sheet(feedback_data: dict) -> dict:
-    if not GOOGLE_SHEETS_WEBHOOK_URL:
-        return {"enabled": False, "status": "not_configured"}
-
-    payload = {
-        "form_name": FEEDBACK_FORM_NAME,
-        "columns": FEEDBACK_COLUMNS,
-        "response": {column: feedback_data.get(column) for column in FEEDBACK_COLUMNS},
-    }
-    data = json.dumps(payload).encode("utf-8")
-    request = urllib.request.Request(
-        GOOGLE_SHEETS_WEBHOOK_URL,
-        data=data,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-
-    try:
+    if GOOGLE_SHEETS_WEBHOOK_URL:
+        payload = {
+            "form_name": FEEDBACK_FORM_NAME,
+            "columns": FEEDBACK_COLUMNS,
+            "response": {column: feedback_data.get(column) for column in FEEDBACK_COLUMNS},
+        }
+        data = json.dumps(payload).encode("utf-8")
+        request = urllib.request.Request(
+            GOOGLE_SHEETS_WEBHOOK_URL,
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
         with urllib.request.urlopen(request, timeout=8) as response:
             response_text = response.read().decode("utf-8").strip()
             response_body = json.loads(response_text) if response_text else {}
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
-        return {"enabled": True, "status": "failed", "detail": str(exc)}
+        if isinstance(response_body, dict) and response_body.get("status") in {"saved", "ok"}:
+            return {"enabled": True, "status": "saved", "method": "webhook"}
+        return {"enabled": True, "status": "unknown_response", "method": "webhook"}
 
-    if isinstance(response_body, dict) and response_body.get("status") in {"saved", "ok"}:
-        return {"enabled": True, "status": "saved"}
-    return {"enabled": True, "status": "unknown_response"}
+    if not GOOGLE_FORM_RESPONSE_URL:
+        return {"enabled": False, "status": "not_configured"}
+
+    form_values = {
+        GOOGLE_FORM_ENTRY_IDS[field]: str(feedback_data.get(field) or "")
+        for field in GOOGLE_FORM_ENTRY_IDS
+        if field != "import_category"
+    }
+    category = str(feedback_data.get("import_category") or "").strip()
+    category_key = GOOGLE_FORM_ENTRY_IDS["import_category"]
+    if category in GOOGLE_FORM_IMPORT_CATEGORIES or not category:
+        form_values[category_key] = category
+    else:
+        form_values[category_key] = "__other_option__"
+        form_values[f"{category_key}.other_option_response"] = category
+
+    request = urllib.request.Request(
+        GOOGLE_FORM_RESPONSE_URL,
+        data=urllib.parse.urlencode(form_values).encode("utf-8"),
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": "FXGuard-AI-Feedback/1.0",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=8) as response:
+        status_code = response.getcode()
+    if 200 <= status_code < 400:
+        return {"enabled": True, "status": "saved", "method": "google_form"}
+    return {
+        "enabled": True,
+        "status": "failed",
+        "method": "google_form",
+        "detail": f"Google Forms returned HTTP {status_code}.",
+    }
 
 
 def load_model(currency: str, horizon: int):
+    import joblib
+
     try:
         currency = validate_currency(currency)
     except ValueError as exc:
@@ -151,6 +204,8 @@ def load_model(currency: str, horizon: int):
 
 def load_features():
     if "features" not in _cache:
+        import pandas as pd
+
         path = DATA_DIR / "exchange_rates_features_and_labels_4year.csv"
         if not path.exists():
             raise HTTPException(status_code=500, detail="Feature dataset is missing.")
@@ -162,6 +217,8 @@ def load_features():
 
 def load_daily_calendar():
     if "daily" not in _cache:
+        import pandas as pd
+
         path = DATA_DIR / "exchange_rates_daily_calendar_4year.csv"
         if not path.exists():
             raise HTTPException(status_code=500, detail="Daily calendar dataset is missing.")
@@ -183,20 +240,20 @@ def risk_considerations(risk: str, currency: str = "USD") -> List[str]:
     pair = f"{currency}/RWF"
     if risk == "High":
         return [
-            f"Recent {pair} changes point to a higher chance of added cost during this check period.",
-            f"The estimated extra cost shows the possible effect of a more expensive {currency} under the planning scenario.",
-            "Payment timing, available cash and supplier terms remain business factors to weigh.",
+            "Ask your supplier whether you can split the payment or adjust the due date if that would ease cash-flow pressure.",
+            "Set aside at least the displayed planning buffer in RWF before the payment is due.",
+            f"Check the latest {pair} rate again before authorising payment, then confirm the final RWF amount with your bank or payment provider.",
         ]
     if risk == "Medium":
         return [
-            f"Recent {pair} changes point to a moderate chance of added cost during this check period.",
-            "The estimated extra cost is a planning scenario, not a guaranteed future cost.",
-            "Payment timing, available cash and supplier terms remain business factors to weigh.",
+            "Include the displayed planning buffer in your cash-flow plan so a moderate rate change does not disrupt the payment.",
+            "Confirm the invoice due date and ask whether a partial payment is acceptable if available cash is tight.",
+            f"Check the latest {pair} rate again before paying and compare the updated RWF cost with today's estimate.",
         ]
     return [
-        f"Recent {pair} rates have been fairly stable compared with the model's past data.",
-        "A Low result does not mean the rate will stay unchanged.",
-        "The current cost and estimated extra cost can be weighed alongside cash needs and supplier terms.",
+        "Use today's estimated RWF cost as your starting point and keep the displayed planning buffer available for normal rate movement.",
+        "Confirm the supplier's due date and payment details early to avoid a last-minute currency conversion.",
+        f"Check the latest {pair} rate once more before paying, especially if the due date is several days away.",
     ]
 
 
@@ -210,6 +267,8 @@ def risk_pressure_rate(risk: str, horizon: int) -> float:
 
 
 def model_predict(currency: str, horizon: int):
+    import pandas as pd
+
     model = load_model(currency, horizon)
     try:
         row = latest_currency_feature_row(currency, FEATURE_COLUMNS)
@@ -381,6 +440,7 @@ def predict_risk(req: RiskRequest):
     planning_buffer = current_cost * max(pressure_rate, 0.0025)
     considerations = risk_considerations(risk, currency)
 
+    metadata = load_json(MODEL_DIR / "multicurrency_model_metadata.json")
     return {
         "currency": currency,
         "currency_name": CURRENCY_INFO[currency]["name"],
@@ -391,6 +451,7 @@ def predict_risk(req: RiskRequest):
         "amount_currency": req.amount,
         "amount_usd": req.amount if currency == "USD" else None,
         "analysis_date": str(row["date"].date()),
+        "model_version": metadata.get("generated_at", "2.0.0"),
         "current_rate": round(current_rate, 4),
         "current_cost_rwf": round(current_cost, 2),
         "risk_level": risk,
@@ -468,7 +529,7 @@ def build_excel_report(result: dict) -> BytesIO:
         ("Check period (days)", result["horizon_days"]),
         (f"Current rate (RWF per {result['currency']})", result["current_rate"]),
         ("Risk level", result["risk_level"]),
-        ("How sure this check is", result.get("confidence_score", result.get("confidence"))),
+        ("Likelihood probability", result.get("confidence_score", result.get("confidence"))),
         ("Cost at current rate (RWF)", result["current_cost_rwf"]),
         ("Possible extra cost (RWF)", result["possible_extra_cost_rwf"]),
         ("Planning buffer estimate (RWF)", result["planning_buffer_estimate_rwf"]),
@@ -479,7 +540,7 @@ def build_excel_report(result: dict) -> BytesIO:
     for row_number in range(7, sheet.max_row + 1):
         label = sheet.cell(row_number, 1).value
         value_cell = sheet.cell(row_number, 2)
-        if label == "How sure this check is":
+        if label == "Likelihood probability":
             value_cell.number_format = "0.0%"
         elif label and ("amount" in label.lower() or "rate" in label.lower() or "cost" in label.lower() or "buffer" in label.lower()):
             value_cell.number_format = "#,##0.00"
@@ -549,6 +610,8 @@ def export_excel(req: RiskRequest):
 
 @app.post("/api/feedback")
 def feedback(req: FeedbackRequest):
+    import pandas as pd
+
     FEEDBACK_DIR.mkdir(parents=True, exist_ok=True)
     feedback_data = req.model_dump()
     feedback_data["submitted_at"] = datetime.now().isoformat(timespec="seconds")
@@ -562,10 +625,22 @@ def feedback(req: FeedbackRequest):
 
     combined = combined.reindex(columns=FEEDBACK_COLUMNS)
     combined.to_excel(FEEDBACK_FILE, index=False)
-    google_sheet_result = append_feedback_to_google_sheet(feedback_data)
+    try:
+        google_sheet_result = append_feedback_to_google_sheet(feedback_data)
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        google_sheet_result = {
+            "enabled": True,
+            "status": "failed",
+            "detail": str(exc),
+        }
+    saved_remotely = google_sheet_result.get("status") == "saved"
     return {
-        "status": "saved",
-        "message": "Thank you for your feedback.",
+        "status": "saved" if saved_remotely else "saved_locally",
+        "message": (
+            "Thank you for your feedback."
+            if saved_remotely
+            else "Your feedback was saved locally, but the response sheet could not be reached."
+        ),
         "file": project_path_label(FEEDBACK_FILE),
         "google_sheet": google_sheet_result,
     }

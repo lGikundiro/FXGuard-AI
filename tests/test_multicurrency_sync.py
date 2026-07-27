@@ -5,6 +5,9 @@ import pandas as pd
 from scripts.sync_multicurrency_rates import (
     RAW_FILES,
     build_daily_calendar,
+    discover_raw_files,
+    load_currency_observations,
+    load_direct_observations,
     load_raw_workbook,
 )
 
@@ -22,6 +25,27 @@ class MultiCurrencySyncTests(unittest.TestCase):
                 self.assertTrue(frame["mid_rate"].equals(frame["average_rate"]))
                 self.assertTrue((frame["buying_rate"] <= frame["average_rate"]).all())
                 self.assertTrue((frame["average_rate"] <= frame["selling_rate"]).all())
+
+    def test_additional_workbooks_match_currency_and_filename_dates(self):
+        source_files = discover_raw_files()
+
+        for currency in ("USD", "EUR", "KES"):
+            with self.subTest(currency=currency):
+                self.assertEqual(len(source_files[currency]), 2)
+                additional_path = source_files[currency][1]
+                self.assertTrue(additional_path.name.startswith(f"{currency} additional "))
+                frame = load_currency_observations(currency, source_files[currency])
+                self.assertEqual(frame["date"].max(), pd.Timestamp("2026-07-27"))
+                self.assertEqual(len(frame), 1116)
+                self.assertFalse(frame["date"].duplicated().any())
+
+    def test_all_currencies_share_updated_coverage(self):
+        observations = load_direct_observations()
+        coverage = observations.groupby("currency")["date"].agg(["min", "max", "count"])
+
+        self.assertTrue(coverage["min"].eq(pd.Timestamp("2022-01-04")).all())
+        self.assertTrue(coverage["max"].eq(pd.Timestamp("2026-07-27")).all())
+        self.assertTrue(coverage["count"].eq(1116).all())
 
     def test_daily_calendar_does_not_backfill_before_currency_history(self):
         observations = pd.DataFrame(

@@ -1,12 +1,22 @@
+import tempfile
 import unittest
+import urllib.parse
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
+import pandas as pd
 from fastapi import HTTPException
 from openpyxl import load_workbook
 
 from backend.app.main import (
+    FEEDBACK_COLUMNS,
+    GOOGLE_FORM_ENTRY_IDS,
+    FeedbackRequest,
     RiskRequest,
+    append_feedback_to_google_sheet,
     build_excel_report,
     currencies,
+    feedback,
     history,
     latest_rate,
     predict_risk,
@@ -45,6 +55,12 @@ class MultiCurrencyApiTests(unittest.TestCase):
                 self.assertEqual(payload["amount"], 1000)
                 self.assertIn(payload["risk_level"], {"Low", "Medium", "High"})
                 self.assertGreater(payload["current_cost_rwf"], 0)
+                self.assertGreaterEqual(payload["confidence_score"], 0)
+                self.assertLessEqual(payload["confidence_score"], 1)
+                self.assertAlmostEqual(
+                    sum(payload["class_probabilities"].values()), 1,
+                    places=3,
+                )
 
     def test_unknown_currency_is_rejected(self):
         for currency in ("UGX", "GBP"):
@@ -64,6 +80,57 @@ class MultiCurrencyApiTests(unittest.TestCase):
             [cell.value for cell in sheet["A"]],
         )
         self.assertIn("WHAT THIS RESULT IS BASED ON", [cell.value for cell in sheet["A"]])
+
+    @patch("backend.app.main.GOOGLE_SHEETS_WEBHOOK_URL", "")
+    @patch("backend.app.main.urllib.request.urlopen")
+    def test_feedback_maps_to_existing_google_form_columns(self, mock_urlopen):
+        response = MagicMock()
+        response.getcode.return_value = 200
+        mock_urlopen.return_value.__enter__.return_value = response
+        feedback = {
+            "participant_name": "Test participant",
+            "import_category": "Medicine",
+            "phone_number": "+250700000000",
+            "clarity_rating": 4,
+            "usefulness_rating": 5,
+            "comment": "Clear and useful",
+        }
+
+        result = append_feedback_to_google_sheet(feedback)
+
+        self.assertEqual(result["status"], "saved")
+        request = mock_urlopen.call_args.args[0]
+        submitted = urllib.parse.parse_qs(request.data.decode("utf-8"))
+        for field, entry_id in GOOGLE_FORM_ENTRY_IDS.items():
+            self.assertEqual(submitted[entry_id], [str(feedback[field])])
+
+    def test_feedback_appends_to_local_excel_backup(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            feedback_file = Path(temporary_directory) / "prototype_feedback.xlsx"
+            request = FeedbackRequest(
+                participant_name="Test participant",
+                import_category="Raw materials",
+                phone_number="+250700000000",
+                clarity_rating=4,
+                usefulness_rating=5,
+                comment="Clear and useful",
+            )
+            with (
+                patch("backend.app.main.FEEDBACK_FILE", feedback_file),
+                patch(
+                    "backend.app.main.append_feedback_to_google_sheet",
+                    return_value={"enabled": True, "status": "saved"},
+                ),
+            ):
+                first_result = feedback(request)
+                second_result = feedback(request)
+
+            saved = pd.read_excel(feedback_file, dtype={"phone_number": str})
+            self.assertEqual(first_result["status"], "saved")
+            self.assertEqual(second_result["status"], "saved")
+            self.assertEqual(saved.columns.tolist(), FEEDBACK_COLUMNS)
+            self.assertEqual(len(saved), 2)
+            self.assertEqual(saved.loc[0, "phone_number"], "+250700000000")
 
 
 if __name__ == "__main__":

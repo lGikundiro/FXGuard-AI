@@ -1109,6 +1109,12 @@ date,currency,buying_rate,average_rate,selling_rate,mid_rate,is_official_observa
 2026-07-15,EUR,1672.364642,1678.084142,1683.803641,1678.084142,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
 2026-07-16,EUR,1676.57287,1682.30637,1688.039869,1682.30637,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
 2026-07-17,EUR,1672.250748,1677.968998,1683.687248,1677.968998,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-20,EUR,1673.524784,1679.246784,1684.968784,1679.246784,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-21,EUR,1669.663125,1675.371375,1681.079625,1675.371375,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-22,EUR,1668.55221,1674.25596,1679.95971,1674.25596,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-23,EUR,1672.306086,1678.022336,1683.738586,1678.022336,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-24,EUR,1664.470553,1670.159553,1675.848553,1670.159553,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-27,EUR,1668.382392,1674.084392,1679.786392,1674.084392,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
 2022-01-04,KES,8.840415,8.928811,9.017206,8.928811,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
 2022-01-05,KES,8.837293,8.925657,9.014021,8.925657,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
 2022-01-06,KES,8.830869,8.919169,9.007469,8.919169,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
@@ -2219,6 +2225,12 @@ date,currency,buying_rate,average_rate,selling_rate,mid_rate,is_official_observa
 2026-07-15,KES,11.302606,11.341261,11.379916,11.341261,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
 2026-07-16,KES,11.307765,11.346435,11.385105,11.346435,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
 2026-07-17,KES,11.308693,11.347363,11.386033,11.347363,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-20,KES,11.314279,11.352964,11.391649,11.352964,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-21,KES,11.310975,11.349645,11.388315,11.349645,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-22,KES,11.312367,11.351037,11.389707,11.351037,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-23,KES,11.295471,11.334081,11.372691,11.334081,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-24,KES,11.300787,11.339412,11.378037,11.339412,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-27,KES,11.297132,11.335742,11.374352,11.335742,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
 2022-01-04,USD,999.820796,1009.82,1019.82,1009.82,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
 2022-01-05,USD,999.920017,1009.92,1019.92,1009.92,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
 2022-01-06,USD,1000.1,1010.1,1020.1,1010.1,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
@@ -3329,3 +3341,9 @@ date,currency,buying_rate,average_rate,selling_rate,mid_rate,is_official_observa
 2026-07-15,USD,1461.985,1466.985,1471.985,1466.985,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
 2026-07-16,USD,1462.085,1467.085,1472.085,1467.085,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
 2026-07-17,USD,1462.205,1467.205,1472.205,1467.205,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-20,USD,1462.36,1467.36,1472.36,1467.36,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-21,USD,1462.5,1467.5,1472.5,1467.5,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-22,USD,1462.68,1467.68,1472.68,1467.68,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-23,USD,1462.765,1467.765,1472.765,1467.765,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-24,USD,1462.885,1467.885,1472.885,1467.885,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates
+2026-07-27,USD,1462.98,1467.98,1472.98,1467.98,1,National Bank of Rwanda Excel export,BNR buying/average/selling rates

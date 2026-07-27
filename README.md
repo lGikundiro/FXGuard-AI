@@ -17,6 +17,9 @@ YouTube Demo: https://youtu.be/jNrEOB-uwfE
 - FastAPI backend
 - Web interface frontend
 - Decision-support output for importers
+- Optional phone or email accounts using one-time verification codes
+- User-owned cloud history, account export, check deletion, and account deletion
+- Plain-language Privacy Notice and Terms of Use
 - Feedback form for usability testing
 - Training script to retrain the models
 
@@ -34,6 +37,8 @@ FXGuard_AI_Project/
   frontend/index.html            # web UI markup
   frontend/styles.css            # frontend styling
   frontend/app.js                # frontend behavior and API calls
+  frontend/accounts.js           # account, consent, and cloud-history behavior
+  supabase/migrations/           # PostgreSQL tables and row-level access policies
   scripts/sync_multicurrency_rates.py   # refresh rate histories/features
   scripts/train_multicurrency_models.py # retrain all currency models
   reports/                       # dataset summaries and user feedback output
@@ -106,6 +111,57 @@ API docs are available at:
 http://127.0.0.1:8000/docs
 ```
 
+## Configure accounts and saved checks
+
+Guest payment checks work without a database. Phone/email accounts and cross-device history use Supabase Auth and PostgreSQL.
+
+1. Create a Supabase project.
+2. Open **SQL Editor** and run the SQL files in `supabase/migrations/` in numeric order.
+3. In **Authentication > Providers**, enable email and phone authentication.
+4. Configure a supported SMS provider for phone codes.
+5. Change the Supabase email template to show `{{ .Token }}` so users receive an email code instead of only a link.
+6. Copy `.env.example` values into the local shell or the Render service environment.
+
+Required server environment variables:
+
+```text
+SUPABASE_URL
+SUPABASE_PUBLISHABLE_KEY
+AUTH_METHODS
+ALLOWED_ORIGINS
+AUTH_COOKIE_SECURE
+```
+
+Optional server variables:
+
+```text
+SUPABASE_DB_URL
+SUPABASE_SERVICE_ROLE_KEY
+AUTH_SELF_DELETE_RPC
+```
+
+`SUPABASE_URL` must be the HTTPS project API URL, such as `https://your-project.supabase.co`, not a PostgreSQL connection string. Store an optional database connection separately as `SUPABASE_DB_URL`.
+
+`AUTH_METHODS` is a comma-separated list of providers that are already enabled in Supabase Auth. The current configuration uses `email`; add `phone` only after configuring an SMS provider.
+
+Apply both SQL files in `supabase/migrations/`. Migration `002_self_service_account_deletion.sql` enables narrowly scoped self-service account deletion without exposing an administrative key. `SUPABASE_SERVICE_ROLE_KEY` remains an optional server-only administrative fallback; never add it to `frontend/`, source control, screenshots, or browser configuration.
+
+For local PowerShell, set the values for the current terminal before starting the app:
+
+```powershell
+$env:SUPABASE_URL="https://your-project.supabase.co"
+$env:SUPABASE_PUBLISHABLE_KEY="your-publishable-key"
+$env:SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
+$env:AUTH_METHODS="email"
+$env:ALLOWED_ORIGINS="http://127.0.0.1:8000,http://localhost:8000"
+$env:AUTH_COOKIE_SECURE="false"
+python run_backend.py
+```
+
+Production sessions use secure `HttpOnly` cookies and CSRF protection. For the static frontend and API, use custom subdomains under the same registered domain (for example `app.example.com` and `api.example.com`) to avoid third-party-cookie restrictions. Set both origins in `ALLOWED_ORIGINS` and update `window.FXGUARD_API_URL` in the static build configuration.
+
+Before enabling real accounts, complete the required Rwanda data-controller/processor and external-storage review. The in-app Privacy Notice and Terms are product drafts and require qualified legal review.
+
 ## Deploy on Render
 
 This project is configured for Render with `render.yaml`.
@@ -134,7 +190,7 @@ Bundled historical USD, EUR, and KES data comes exclusively from the official BN
 
 The application does not synthesize rates or fetch them through a third-party provider. It serves the most recently imported official records and clearly reports their date through `/api/data-freshness`.
 
-To refresh the data, download updated USD, EUR, and KES histories from BNR's exchange-rate page, replace the three workbooks in `data/raw/`, and run the synchronization and training commands below. The synchronization script validates codes, columns, dates, rates, and workbook hashes before producing application data.
+To refresh the data, download the new USD, EUR, and KES records from BNR's exchange-rate page and keep the original history workbooks unchanged. Save each supplementary export in `data/raw/` as `<CURRENCY> additional YYYY-MM-DD to YYYY-MM-DD.xlsx`, using `EUR`, `USD`, or `KES` and the exact first and last dates inside the workbook. Then run the synchronization and training commands below. The synchronization script discovers all supplementary files, validates their currency codes, columns, rates, filename date ranges, overlaps, and workbook hashes, and merges them chronologically before producing application data.
 
 ## Model details
 
@@ -183,7 +239,15 @@ This validates the three official BNR Excel histories and recreates the multi-cu
 backend/models/multicurrency_model_metadata.json
 ```
 
-The metadata records each chronological train/test window, class distribution, candidate metrics, selected classifier, data date, and per-currency label thresholds. Treat model confidence as a decision-support signal: it is not a guarantee of the future exchange rate, and some recent validation windows have limited class variety.
+The metadata records each chronological train/test window, class distribution, candidate metrics, selected classifier, data date, and per-currency label thresholds. Treat the likelihood probability as a decision-support signal: it is not a guarantee of the future exchange rate, and some recent validation windows have limited class variety.
+
+Model selection uses three expanding-window rolling-origin backtest folds for every currency and horizon. These folds stay within the first 80% of the history, while the final 20% remains an untouched holdout. A 7-row or 14-row purge gap separates each training and test window to prevent future-derived labels from crossing the evaluation boundary. After evaluation, the selected production model is refitted on all labeled observations. Detailed results are written to `reports/multicurrency_model_evaluation.md`.
+
+Current testing documentation:
+
+- `reports/multicurrency_model_evaluation.md` — generated fold-by-fold multicurrency metrics
+- `reports/testing_and_backtesting_report.md` — plain-language technical report, conclusion, and presentation summary
+- `reports/README.md` — report index distinguishing current evidence from preserved USD-only material
 
 ## Main API endpoints
 
@@ -217,7 +281,7 @@ The system provides **decision support only**. It does not provide financial adv
 
 ## User testing
 
-For research evaluation, the app embeds the Google Form named `FXGuard AI User feedback` in the **Participant feedback** page.
+For research evaluation, the app provides a native HTML/CSS/JavaScript form on the **Share feedback** page.
 
 Form link:
 
@@ -225,14 +289,14 @@ Form link:
 https://docs.google.com/forms/d/e/1FAIpQLSd3E97VFGFl7v-9ojSAAmPc4RkE-30tf9YCJ_XUhPuw8JFbBg/viewform
 ```
 
-Users submit feedback through the embedded Google Form. Responses are saved directly in the Google Forms response spreadsheet connected to that form. If the embedded form does not load in a browser, users can click **Open form in new tab** on the feedback page.
-
-The backend still includes the local feedback API and Excel download endpoint as a backup:
+The form sends validated responses to the backend. The backend saves a local Excel backup and forwards the same fields to the existing Google Forms response spreadsheet:
 
 ```text
 POST /api/feedback
 GET  /api/feedback-file
 ```
+
+The default Google Form response destination is configured through `GOOGLE_FORM_RESPONSE_URL` in `.env.example`. The native form preserves the response sheet's existing columns for timestamp, clarity, usefulness, comments, participant name, import category, and phone number.
 
 Participants should use hypothetical supplier amounts during testing unless they voluntarily choose otherwise. The project does not collect bank details, supplier contracts, real financial statements, or confidential business records.
 
@@ -241,17 +305,17 @@ Participants should use hypothetical supplier amounts during testing unless they
 
 The app reports the age of its latest imported BNR record through `/api/data-freshness`. A production deployment should establish a documented schedule for downloading the official BNR exports, running `sync_multicurrency_rates.py`, and retraining or validating the models after enough new observations accumulate. Direct BNR API access could automate that workflow later if it becomes available.
 
-The frontend is still a single-file MVP, but the most immediate bugs have been cleaned: duplicate recommendation container IDs were removed, the obsolete hidden feedback controls were removed, and the visible feedback flow now uses the embedded Google Form.
+The frontend is still a single-file MVP, but the most immediate bugs have been cleaned: duplicate recommendation container IDs were removed, the obsolete hidden feedback controls were removed, and the feedback flow now uses a native accessible form backed by the API and existing response sheet.
 
 
 ## Notebooks
 
-The `notebooks/` folder contains guided Jupyter notebooks for the full data science workflow:
+The overview notebook describes the current multicurrency system. Notebooks `01` through `05` preserve the guided **original USD/RWF workflow** used during early project development. They are useful for explaining the data-science steps, but they do not train the active multicurrency production artifacts. Use `scripts/sync_multicurrency_rates.py` and `scripts/train_multicurrency_models.py` for the current USD/EUR/KES system.
 
-1. `00_project_overview.ipynb` — project structure and workflow overview
+1. `00_project_overview.ipynb` — current USD/EUR/KES product, data, model, API, account, and deployment overview
 2. `01_data_collection_and_cleaning.ipynb` — load BNR Excel export and clean USD/RWF rates
 3. `02_feature_engineering_and_labels.ipynb` — create ML features and 7-day/14-day risk labels
-4. `03_model_training_and_evaluation.ipynb` — train and evaluate baseline + ML models
+4. `03_model_training_and_evaluation.ipynb` — train and evaluate the original USD/RWF models
 5. `04_prediction_function_and_api_test.ipynb` — test prediction logic and API request structure
 6. `05_user_testing_and_evaluation.ipynb` — organize usability testing and feedback analysis
 

@@ -15,9 +15,98 @@ let selectedCurrency    = 'USD';
 let latestResult        = null;
 let latestRate          = null;   // kept for converter
 let historyChart        = null;
+let currentHistoryPoints = [];
 let currentDays         = 180;   // active chart range
 let chartLibraryRequested = false;
 let activeScreen        = 'dashboard';
+
+const THEME_STORAGE_KEY = 'fxguard_theme';
+
+function activeTheme() {
+  return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+}
+
+function chartPalette() {
+  return activeTheme() === 'light'
+    ? {
+        line: '#a66b00',
+        point: '#7a4e00',
+        fillTop: 'rgba(183,121,0,0.20)',
+        fillBottom: 'rgba(183,121,0,0.01)',
+        canvas: '#fffdf8',
+        grid: 'rgba(16,35,58,0.10)',
+        ticks: 'rgba(16,35,58,0.62)',
+        tooltip: '#fffdf8',
+        tooltipTitle: 'rgba(16,35,58,0.68)',
+        tooltipBody: '#10233a',
+        tooltipBorder: 'rgba(16,35,58,0.15)',
+      }
+    : {
+        line: '#f5ca52',
+        point: '#fff2b6',
+        fillTop: 'rgba(245,202,82,0.24)',
+        fillBottom: 'rgba(255,255,255,0.01)',
+        canvas: '#0d2038',
+        grid: 'rgba(255,255,255,0.08)',
+        ticks: 'rgba(255,255,255,0.58)',
+        tooltip: '#0d2038',
+        tooltipTitle: 'rgba(255,255,255,0.68)',
+        tooltipBody: '#ffffff',
+        tooltipBorder: 'rgba(255,255,255,0.08)',
+      };
+}
+
+function applyTheme(theme, { persist = true, redraw = true } = {}) {
+  const nextTheme = theme === 'light' ? 'light' : 'dark';
+  const root = document.documentElement;
+  root.dataset.theme = nextTheme;
+  root.style.colorScheme = nextTheme;
+
+  if (persist) {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+    } catch (_) {
+      // The visual theme still works when browser storage is unavailable.
+    }
+  }
+
+  const switchTarget = nextTheme === 'light' ? 'dark' : 'light';
+  const toggle = document.getElementById('themeToggle');
+  const toggleLabel = document.getElementById('themeToggleLabel');
+  const label = `Switch to ${switchTarget} mode`;
+  if (toggle) {
+    toggle.setAttribute('aria-label', label);
+    toggle.setAttribute('title', label);
+    toggle.setAttribute('aria-pressed', String(nextTheme === 'light'));
+  }
+  if (toggleLabel) toggleLabel.textContent = `${switchTarget[0].toUpperCase()}${switchTarget.slice(1)} mode`;
+
+  const themeColor = document.getElementById('themeColorMeta');
+  if (themeColor) themeColor.setAttribute('content', nextTheme === 'light' ? '#f2eee3' : '#08172b');
+
+  if (redraw && currentHistoryPoints.length) {
+    renderHistoryChart(currentHistoryPoints, currentDays, selectedCurrency);
+  }
+}
+
+document.getElementById('themeToggle')?.addEventListener('click', () => {
+  applyTheme(activeTheme() === 'light' ? 'dark' : 'light');
+});
+
+applyTheme(activeTheme(), { persist: false, redraw: false });
+
+const preferredTheme = window.matchMedia('(prefers-color-scheme: light)');
+preferredTheme.addEventListener?.('change', event => {
+  let savedTheme = null;
+  try {
+    savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+  } catch (_) {
+    // Follow the device setting when storage is unavailable.
+  }
+  if (savedTheme !== 'light' && savedTheme !== 'dark') {
+    applyTheme(event.matches ? 'light' : 'dark', { persist: false });
+  }
+});
 
 const FALLBACK_CURRENCIES = {
   USD: { name: 'US Dollar', symbol: '$', decimals: 2 },
@@ -30,9 +119,11 @@ let currencyCatalog = { ...FALLBACK_CURRENCIES };
 const PAGE_TITLES = {
   dashboard:  'Dashboard',
   assessment: 'Run payment check',
-  results:    'Results',
+  results:    'RWF Depreciation Risk',
   decision:   'Payment tips',
   feedback:   'Share feedback',
+  privacy:    'Privacy Notice',
+  terms:      'Terms of Use',
 };
 
 /* ==========================================================
@@ -69,6 +160,89 @@ document.querySelectorAll('.nav-item[data-screen]').forEach(btn =>
 document.querySelectorAll('[data-go-screen]').forEach(el =>
   el.addEventListener('click', () => showScreen(el.dataset.goScreen))
 );
+
+/* ==========================================================
+   NATIVE FEEDBACK FORM
+   ========================================================== */
+const feedbackForm = document.getElementById('feedbackForm');
+const feedbackCategory = document.getElementById('feedbackCategory');
+const feedbackOtherCategoryField = document.getElementById('feedbackOtherCategoryField');
+const feedbackOtherCategory = document.getElementById('feedbackOtherCategory');
+const feedbackStatus = document.getElementById('feedbackStatus');
+
+function updateOtherCategoryField() {
+  const showOther = feedbackCategory?.value === 'Other';
+  feedbackOtherCategoryField?.classList.toggle('hidden', !showOther);
+  if (feedbackOtherCategory) {
+    feedbackOtherCategory.required = showOther;
+    if (!showOther) feedbackOtherCategory.value = '';
+  }
+}
+
+feedbackCategory?.addEventListener('change', updateOtherCategoryField);
+
+feedbackForm?.addEventListener('submit', async event => {
+  event.preventDefault();
+  updateOtherCategoryField();
+  if (!feedbackForm.reportValidity()) return;
+
+  const formData = new FormData(feedbackForm);
+  const selectedCategory = String(formData.get('import_category') ?? '').trim();
+  const payload = {
+    participant_name: String(formData.get('participant_name') ?? '').trim() || null,
+    import_category: (
+      selectedCategory === 'Other'
+        ? feedbackOtherCategory?.value.trim()
+        : selectedCategory
+    ) || null,
+    phone_number: String(formData.get('phone_number') ?? '').trim() || null,
+    clarity_rating: Number(formData.get('clarity_rating')),
+    usefulness_rating: Number(formData.get('usefulness_rating')),
+    comment: String(formData.get('comment') ?? '').trim() || null,
+  };
+
+  const submitButton = document.getElementById('feedbackSubmitButton');
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.classList.add('loading');
+  }
+  if (feedbackStatus) {
+    feedbackStatus.textContent = 'Saving your feedback…';
+    feedbackStatus.className = 'feedback-status';
+  }
+
+  try {
+    const response = await fetch(`${API}/api/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.detail ?? 'Feedback could not be submitted.');
+
+    const remoteSaved = result.google_sheet?.status === 'saved';
+    if (!remoteSaved) throw new Error(result.message ?? 'The response sheet could not be reached.');
+
+    feedbackForm.reset();
+    updateOtherCategoryField();
+    if (feedbackStatus) {
+      feedbackStatus.textContent = 'Thank you. Your feedback was submitted successfully.';
+      feedbackStatus.className = 'feedback-status success';
+    }
+    toast('Feedback submitted. Thank you.', 'success');
+  } catch (error) {
+    if (feedbackStatus) {
+      feedbackStatus.textContent = error.message || 'Feedback could not be submitted. Please try again.';
+      feedbackStatus.className = 'feedback-status error';
+    }
+    toast('Feedback could not be submitted. Please try again.', 'error');
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.classList.remove('loading');
+    }
+  }
+});
 
 /* ==========================================================
    HORIZON TOGGLES
@@ -242,10 +416,22 @@ async function drawHistory(days = 180) {
   const data = await response.json();
   if (currency !== selectedCurrency) return;
   const points = data.points ?? [];
+  currentHistoryPoints = points;
   updateChartStats(points);
 
+  renderHistoryChart(points, days, currency);
+}
+
+function renderHistoryChart(points, days, currency) {
   const canvas = document.getElementById('historyChart');
   if (!canvas) return;
+
+  if (!points.length) {
+    if (historyChart) { historyChart.destroy(); historyChart = null; }
+    const ctx = canvas.getContext('2d');
+    ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    return;
+  }
 
   if (typeof Chart === 'undefined') {
     drawFallbackLine(canvas, points);
@@ -258,9 +444,10 @@ async function drawHistory(days = 180) {
   const rawMax   = Math.max(...values);
   const rawRange = rawMax - rawMin || 1;
   const ctx      = canvas.getContext('2d');
+  const palette  = chartPalette();
   const grad     = ctx.createLinearGradient(0, 0, 0, 300);
-  grad.addColorStop(0, 'rgba(245,202,82,0.24)');
-  grad.addColorStop(1, 'rgba(255,255,255,0.01)');
+  grad.addColorStop(0, palette.fillTop);
+  grad.addColorStop(1, palette.fillBottom);
 
   historyChart = new Chart(canvas, {
     type: 'line',
@@ -270,12 +457,12 @@ async function drawHistory(days = 180) {
         label: `${currency}/RWF reference rate`,
         data: values,
         tension: 0.3,
-        borderColor: '#f5ca52',
+        borderColor: palette.line,
         backgroundColor: grad,
         fill: true,
         pointRadius: points.map((_, i) => i === points.length - 1 ? 4 : 0),
         pointHoverRadius: 5,
-        pointBackgroundColor: '#fff2b6',
+        pointBackgroundColor: palette.point,
         borderWidth: 2,
       }],
     },
@@ -287,9 +474,11 @@ async function drawHistory(days = 180) {
         legend: { display: false },
         tooltip: {
           displayColors: false,
-          backgroundColor: '#0d2038',
-          titleColor: 'rgba(255,255,255,.68)',
-          bodyColor: '#fff',
+          backgroundColor: palette.tooltip,
+          titleColor: palette.tooltipTitle,
+          bodyColor: palette.tooltipBody,
+          borderColor: palette.tooltipBorder,
+          borderWidth: 1,
           padding: 10,
           cornerRadius: 8,
           callbacks: {
@@ -304,7 +493,7 @@ async function drawHistory(days = 180) {
           border: { display: false },
           ticks: {
             maxTicksLimit: 7,
-            color: 'rgba(255,255,255,.58)',
+            color: palette.ticks,
             font: { size: 11, family: "'Manrope', sans-serif" },
             callback(val) {
               const label = this.getLabelForValue(val);
@@ -315,11 +504,11 @@ async function drawHistory(days = 180) {
         y: {
           min: rawMin - rawRange * 0.08,
           max: rawMax + rawRange * 0.08,
-          grid: { color: 'rgba(255,255,255,0.08)' },
+          grid: { color: palette.grid },
           border: { display: false },
           ticks: {
             maxTicksLimit: 5,
-            color: 'rgba(255,255,255,.58)',
+            color: palette.ticks,
             font: { size: 11, family: "'Manrope', sans-serif" },
             callback: v => fmtRate(v),
           },
@@ -344,7 +533,11 @@ function updateChartStats(points) {
   const trendEl = document.getElementById('statTrend');
   if (trendEl) {
     trendEl.textContent = trend;
-    trendEl.style.color = isFlat ? '' : pctVal > 0 ? 'var(--amber-500)' : 'var(--teal-500)';
+    const trendCard = trendEl.closest('.chart-stat-trend');
+    if (trendCard) {
+      trendCard.classList.remove('trend-rising', 'trend-falling', 'trend-flat');
+      trendCard.classList.add(`trend-${trend.toLowerCase()}`);
+    }
   }
 }
 
@@ -380,6 +573,7 @@ function loadChartLibraryWhenIdle() {
 /* Fallback canvas renderer */
 function drawFallbackLine(canvas, points) {
   if (!points.length) return;
+  const palette = chartPalette();
   const dpr  = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
   const W    = Math.max(rect.width  || 600, 300);
@@ -395,25 +589,25 @@ function drawFallbackLine(canvas, points) {
   const cW   = W - pad.l - pad.r, cH = H - pad.t - pad.b;
   const xOf  = i => pad.l + (cW * i) / Math.max(points.length - 1, 1);
   const yOf  = v => pad.t + cH - ((v - vMin) / vR) * cH;
-  ctx.fillStyle = '#0d2038'; ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
+  ctx.fillStyle = palette.canvas; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle = palette.grid; ctx.lineWidth = 1;
   for (let i=0;i<=4;i++) {
     const y = pad.t+(cH/4)*i;
     ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
-    ctx.fillStyle='rgba(255,255,255,.58)'; ctx.font='10px Manrope,sans-serif';
+    ctx.fillStyle=palette.ticks; ctx.font='10px Manrope,sans-serif';
     ctx.textAlign='right'; ctx.fillText(fmtRate(vMax-(vR/4)*i), pad.l-4, y+3);
   }
   const grad = ctx.createLinearGradient(0,pad.t,0,H-pad.b);
-  grad.addColorStop(0,'rgba(245,202,82,0.24)'); grad.addColorStop(1,'rgba(255,255,255,0)');
+  grad.addColorStop(0,palette.fillTop); grad.addColorStop(1,palette.fillBottom);
   ctx.beginPath();
   points.forEach((p,i) => { const x=xOf(i),y=yOf(p.mid_rate); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
   ctx.lineTo(xOf(points.length-1),H-pad.b); ctx.lineTo(xOf(0),H-pad.b);
   ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
   ctx.beginPath();
   points.forEach((p,i) => { const x=xOf(i),y=yOf(p.mid_rate); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
-  ctx.strokeStyle='#f5ca52'; ctx.lineWidth=2; ctx.stroke();
+  ctx.strokeStyle=palette.line; ctx.lineWidth=2; ctx.stroke();
   const lx=xOf(points.length-1), ly=yOf(vals[vals.length-1]);
-  ctx.beginPath(); ctx.arc(lx,ly,4,0,Math.PI*2); ctx.fillStyle='#fff2b6'; ctx.fill();
+  ctx.beginPath(); ctx.arc(lx,ly,4,0,Math.PI*2); ctx.fillStyle=palette.point; ctx.fill();
 }
 
 /* ==========================================================
@@ -462,14 +656,23 @@ function saveCheck(r) {
     rate:    r.current_rate,
     full:    r,
   };
+
+  if (window.FXGuardAccount?.isSignedIn()) {
+    window.FXGuardAccount.saveCheck(entry).catch(error => {
+      console.error('Cloud save failed:', error);
+      toast('The result is open, but it could not be saved to your account.', 'error');
+    });
+    return;
+  }
+
   const signature = checkSignature(entry);
-  const checks = getChecks().filter(check => checkSignature(check) !== signature);
+  const checks = getLocalChecks().filter(check => checkSignature(check) !== signature);
   checks.unshift(entry);
   localStorage.setItem(HISTORY_KEY, JSON.stringify(checks.slice(0, MAX_HISTORY)));
   renderRecentChecks();
 }
 
-function getChecks() {
+function getLocalChecks() {
   try {
     const stored = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
     const seen = new Set();
@@ -485,6 +688,11 @@ function getChecks() {
     return unique.slice(0, MAX_HISTORY);
   }
   catch { return []; }
+}
+
+function getChecks() {
+  const cloudChecks = window.FXGuardAccount?.getChecks();
+  return Array.isArray(cloudChecks) ? cloudChecks : getLocalChecks();
 }
 
 function renderRecentChecks() {
@@ -524,6 +732,8 @@ function renderRecentChecks() {
       </td>
       <td class="td-action">
         <span class="row-link" aria-hidden="true">View →</span>
+        ${c.id ? `<button class="row-delete-button" type="button" data-delete-check="${c.id}"
+          aria-label="Delete this saved check" title="Delete saved check">Delete</button>` : ''}
       </td>
     </tr>`
   ).join('');
@@ -550,9 +760,19 @@ function renderRecentChecks() {
       openCheck(row);
     });
   });
+  tbody.querySelectorAll('[data-delete-check]').forEach(button => {
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      window.FXGuardAccount?.deleteCheck(button.dataset.deleteCheck);
+    });
+  });
 }
 
-document.getElementById('clearHistory')?.addEventListener('click', () => {
+document.getElementById('clearHistory')?.addEventListener('click', async () => {
+  if (window.FXGuardAccount?.isSignedIn()) {
+    await window.FXGuardAccount.clearChecks();
+    return;
+  }
   localStorage.removeItem(HISTORY_KEY);
   renderRecentChecks();
   toast('Recent checks cleared.');
@@ -670,22 +890,22 @@ function getDecisionSupportConsiderations(result) {
   const pair = result.currency ? `${result.currency}/RWF` : 'exchange-rate';
   if (result.risk_level === 'High') {
     return [
-      `Recent ${pair} changes point to a higher chance of added cost during this check period.`,
-      `The estimated extra cost shows the possible effect of a more expensive ${currency} under the planning scenario.`,
-      'Payment timing, available cash and supplier terms remain business factors to weigh.',
+      `Plan for a higher chance that recent ${pair} changes could add to your cost during this check period.`,
+      `Use the estimated extra cost to prepare for a more expensive ${currency}, but treat it as a planning scenario rather than a guarantee.`,
+      'Weigh payment timing against your available cash and supplier terms before deciding.',
     ];
   }
   if (result.risk_level === 'Medium') {
     return [
-      `Recent ${pair} changes point to a moderate chance of added cost during this check period.`,
-      'The estimated extra cost is a planning scenario, not a guaranteed future cost.',
-      'Payment timing, available cash and supplier terms remain business factors to weigh.',
+      `Plan for a moderate chance that recent ${pair} changes could add to your cost during this check period.`,
+      'Use the estimated extra cost as a planning guide, not as a guaranteed future cost.',
+      'Weigh payment timing against your available cash and supplier terms before deciding.',
     ];
   }
   return [
-    `Recent ${pair} rates have been fairly stable compared with the model's past data.`,
-    'A Low result does not mean the rate will stay unchanged.',
-    'The current cost and estimated extra cost can be weighed alongside cash needs and supplier terms.',
+    `Use the recent stability in ${pair} rates as context, but leave room in your plan for the rate to change.`,
+    'Keep the displayed planning buffer available even when the result is Low.',
+    'Weigh the current and estimated extra costs against your cash needs and supplier terms.',
   ];
 }
 
@@ -704,9 +924,27 @@ function renderResult(r) {
   if (resultHero) resultHero.className = `result-hero level-${r.risk_level}`;
 
   setText('riskMeaning',     RISK_MEANINGS[r.risk_level] ?? 'Recent rate information is shown below.');
+  setText('riskHorizon',     `In the next ${r.horizon_days ?? selectedMainHorizon} days`);
   setText('currentCost',     `RWF ${fmt(r.current_cost_rwf)}`);
   setText('currentRateText', `At today's rate of ${fmtRate(r.current_rate, r.currency)} RWF per ${r.currency}`);
   setText('extraCost',       `RWF ${fmt(r.possible_extra_cost_rwf)}`);
+
+  const confidence = Number(r.confidence_score ?? r.confidence);
+  const hasConfidence = Number.isFinite(confidence);
+  const confidencePercent = hasConfidence
+    ? Math.max(0, Math.min(100, Math.round(confidence * 100)))
+    : 0;
+  setText('modelConfidence', hasConfidence ? `${confidencePercent}%` : 'Unavailable');
+  const confidenceBar = document.getElementById('modelConfidenceBar');
+  if (confidenceBar) confidenceBar.style.width = `${confidencePercent}%`;
+  const confidenceTrack = document.getElementById('modelConfidenceTrack');
+  if (confidenceTrack) {
+    confidenceTrack.setAttribute('aria-valuenow', String(confidencePercent));
+    confidenceTrack.setAttribute(
+      'aria-valuetext',
+      hasConfidence ? `${confidencePercent}% likelihood probability` : 'Likelihood probability unavailable'
+    );
+  }
 
   /* Key drivers */
   const driversEl = document.getElementById('drivers');
@@ -744,6 +982,7 @@ function renderResult(r) {
     `This estimate uses the current BNR rate for ${r.currency}/RWF and a cautious estimate of possible extra cost. ` +
     'Use this estimate for planning only. The future rate may be different.'
   );
+  window.FXGuardAccount?.updateUI();
 }
 
 /* ==========================================================
@@ -900,7 +1139,7 @@ document.getElementById('downloadHtmlBtn').addEventListener('click', () => {
             <td style="padding:8px 12px;border-bottom:1px solid #e3e7ed;font-family:monospace">${fmtRate(r.current_rate, r.currency)} RWF / ${r.currency}</td></tr>
         <tr><td style="padding:8px 12px;border-bottom:1px solid #e3e7ed;color:#718096">Planning buffer estimate</td>
             <td style="padding:8px 12px;border-bottom:1px solid #e3e7ed;font-family:monospace;color:#b37400">RWF ${fmt(r.planning_buffer_estimate_rwf ?? r.suggested_margin_buffer_rwf)}</td></tr>
-        <tr><td style="padding:8px 12px;color:#718096">How sure this check is</td>
+        <tr><td style="padding:8px 12px;color:#718096">Likelihood probability</td>
             <td style="padding:8px 12px;font-family:monospace">${pct(r.confidence_score ?? r.confidence ?? 0)}</td></tr>
       </table>
     </div>
@@ -1066,5 +1305,17 @@ async function init() {
   await Promise.allSettled([currencyDataRequest, catalogRequest]);
   loadChartLibraryWhenIdle();
 }
+
+window.FXGuardApp = {
+  checkSignature,
+  getLocalChecks,
+  renderRecentChecks,
+  showScreen,
+  toast,
+  clearLocalChecks() {
+    localStorage.removeItem(HISTORY_KEY);
+    renderRecentChecks();
+  },
+};
 
 init();

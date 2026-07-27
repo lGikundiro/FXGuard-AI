@@ -1,5 +1,7 @@
 # FXGuard Prepared BNR Exchange Rate Dataset — 4-Year Daily Version
 
+> **Legacy USD-only dataset summary.** The active application uses the validated USD, EUR, and KES datasets described in `data/processed/multicurrency_data_metadata.json`.
+
 This package was created from the uploaded BNR export: `currency_table.xlsx`.
 
 ## Coverage

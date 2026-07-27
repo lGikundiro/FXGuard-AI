@@ -1,6 +1,8 @@
 """
-Train FXGuard USD/RWF depreciation-risk models.
-Creates 7-day and 14-day models using chronological train/test split.
+Legacy trainer for the original USD/RWF-only research workflow.
+
+For the active USD/EUR/KES application, use train_multicurrency_models.py.
+This script is retained so the original notebooks and academic artifacts remain reproducible.
 """
 from __future__ import annotations
 

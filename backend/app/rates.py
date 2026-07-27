@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-import pandas as pd
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -30,6 +32,8 @@ def validate_currency(currency: str) -> str:
 
 
 def load_local_daily() -> pd.DataFrame:
+    import pandas as pd
+
     global _local_daily
     if _local_daily is None:
         if not DATA_PATH.exists():

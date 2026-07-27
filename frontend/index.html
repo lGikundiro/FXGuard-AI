@@ -3,12 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#08172b" />
+  <meta id="themeColorMeta" name="theme-color" content="#08172b" />
   <title>FXGuard AI — Plan Supplier Payments</title>
-  <style>html,body{margin:0;background:#08172b;color:#fff}</style>
+  <script>
+    (() => {
+      let theme = 'dark';
+      try {
+        const savedTheme = localStorage.getItem('fxguard_theme');
+        theme = savedTheme === 'light' || savedTheme === 'dark'
+          ? savedTheme
+          : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      } catch (_) {
+        theme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      }
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.style.colorScheme = theme;
+    })();
+  </script>
+  <style>
+    html,body{margin:0;background:#08172b;color:#fff}
+    html[data-theme="light"],html[data-theme="light"] body{background:#f2eee3;color:#10233a}
+  </style>
   <script>window.FXGUARD_API_URL = "";</script>
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg?v=1" />
-  <link rel="stylesheet" href="/static/styles.css?v=34">
+  <link rel="stylesheet" href="/static/styles.css?v=56">
 </head>
 <body>
 
@@ -66,6 +84,11 @@
     </ul>
 
     <div class="sidebar-footer">
+      <div class="legal-links" aria-label="Legal information">
+        <button type="button" data-go-screen="privacy">Privacy</button>
+        <span aria-hidden="true">·</span>
+        <button type="button" data-go-screen="terms">Terms</button>
+      </div>
       <div class="data-status-pill" id="sidebarStatus" aria-live="polite">
         <span class="status-dot"></span>
         <span id="sidebarStatusText">Checking rate date…</span>
@@ -83,6 +106,23 @@
         <h1 class="page-title" id="pageTitle">Dashboard</h1>
       </div>
       <div class="topbar-right">
+        <div class="account-auth-actions" id="guestAccountActions">
+          <button class="account-link-button" id="signInButton" type="button">Sign in</button>
+        </div>
+        <button class="account-user-button hidden" id="accountButton" type="button" aria-label="Open account settings">
+          <span class="account-user-dot" aria-hidden="true"></span>
+          <span id="accountIdentifier">Account</span>
+        </button>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to light mode" title="Switch to light mode">
+          <svg class="theme-icon theme-icon-sun" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M12.95 3.05l-1.06 1.06M4.11 11.89l-1.06 1.06" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/>
+          </svg>
+          <svg class="theme-icon theme-icon-moon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M13.4 10.2A5.7 5.7 0 015.8 2.6a5.7 5.7 0 107.6 7.6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+          <span id="themeToggleLabel">Light mode</span>
+        </button>
         <label class="currency-switcher" for="activeCurrency">
           <span>Choose currency</span>
           <select id="activeCurrency" aria-label="Dashboard currency">
@@ -147,7 +187,8 @@
               <p class="panel-sub" id="chartDescription">If this number goes up, you need more RWF to buy 1 USD.</p>
             </div>
             <div class="chart-head-right">
-              <div class="chart-controls">
+              <div class="chart-controls" aria-label="Trend period">
+                <span class="chart-controls-label">Period</span>
                 <button class="chart-range-btn" data-days="90">90 days</button>
                 <button class="chart-range-btn active" data-days="180">6 months</button>
                 <button class="chart-range-btn" data-days="365">1 year</button>
@@ -162,9 +203,16 @@
                   <span>Change</span>
                   <strong id="statChange">—</strong>
                 </div>
-                <div class="chart-stat">
+                <div class="chart-stat chart-stat-trend trend-flat">
                   <span>Trend</span>
-                  <strong id="statTrend">—</strong>
+                  <strong>
+                    <span id="statTrend">—</span>
+                    <span class="trend-direction-icon" aria-hidden="true">
+                      <svg viewBox="0 0 20 20" fill="none">
+                        <path d="M3.5 10h13M11.5 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </span>
+                  </strong>
                 </div>
               </div>
             </div>
@@ -282,7 +330,7 @@
     <!-- ============================================================
          SCREEN: RESULTS
     ============================================================ -->
-    <section class="screen" id="results" aria-label="Risk results">
+    <section class="screen" id="results" aria-label="RWF depreciation risk">
 
       <!-- Empty state -->
       <div id="emptyResult" class="empty-state">
@@ -301,14 +349,26 @@
         <div class="result-hero" id="resultHero">
           <div class="result-risk-block">
             <p class="result-eyebrow">
-              Payment risk
+              Risk level
               <button class="info-btn" id="riskInfoBtn" aria-label="What do risk levels mean?" title="What do these levels mean?">?</button>
             </p>
             <div class="result-risk-line">
               <span class="result-risk-dot" aria-hidden="true"></span>
               <p class="result-risk-value" id="riskLevel">—</p>
+              <p class="result-risk-horizon" id="riskHorizon">—</p>
             </div>
             <p class="result-risk-meaning" id="riskMeaning">—</p>
+            <div class="result-confidence">
+              <div class="result-confidence-head">
+                <span>Likelihood probability</span>
+                <strong id="modelConfidence">—</strong>
+              </div>
+              <div class="result-confidence-track" id="modelConfidenceTrack"
+                role="progressbar" aria-label="Likelihood probability" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <span id="modelConfidenceBar"></span>
+              </div>
+              <p>How likely this risk level appears from recent rate patterns. The actual result may be different.</p>
+            </div>
           </div>
 
           <div class="result-metrics">
@@ -325,14 +385,16 @@
           </div>
         </div>
 
+        <div class="save-account-prompt hidden" id="saveAccountPrompt">
+          <div>
+            <strong>Save this result</strong>
+            <span>Choose save to create an account and keep your payment checks together.</span>
+          </div>
+          <button class="btn-secondary" id="resultSignUpButton" type="button">Save result</button>
+        </div>
+
         <!-- Quiet export actions -->
         <div class="export-bar hidden" id="exportBar">
-          <div class="export-bar-left">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M8 1v9M4 6l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <span>Save result</span>
-          </div>
           <div class="export-btn-group">
             <button class="btn-export-main btn-export-secondary" id="downloadExcelBtn">
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M6.5 1v7M3 5l3.5 3.5L10 5M1 11h11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -353,7 +415,7 @@
 
           <!-- Recommendations -->
           <div class="panel result-advice-panel">
-            <h2 class="panel-title">What you may consider</h2>
+            <h2 class="panel-title">Payment tips</h2>
             <div id="resultRecommendations" class="rec-list"></div>
             <button class="btn-secondary mt-16" data-go-screen="decision">View payment tips</button>
           </div>
@@ -380,7 +442,7 @@
           <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.5" opacity=".3"/><path d="M13 20h14M20 13v14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".5"/></svg>
         </div>
         <h2>No payment tips yet</h2>
-        <p>Run a payment check first. Points to consider will appear here.</p>
+        <p>Run a payment check first. Practical tips will appear here.</p>
         <button class="btn-primary btn-compact" data-go-screen="assessment">Run payment check</button>
       </div>
 
@@ -389,7 +451,7 @@
 
           <div class="panel">
             <h2 class="panel-title">Payment tips</h2>
-            <p class="panel-sub">Points to consider alongside your business needs.</p>
+            <p class="panel-sub">Practical tips to help you plan around this payment.</p>
             <div id="decisionRecommendations" class="rec-list"></div>
           </div>
 
@@ -422,35 +484,305 @@
          SCREEN: FEEDBACK
     ============================================================ -->
     <section class="screen" id="feedback" aria-label="Participant feedback">
-      <div class="panel">
+      <div class="panel feedback-panel">
         <div class="panel-head feedback-head">
           <div>
             <h2 class="panel-title">Share your feedback</h2>
             <p class="panel-sub">Tell us what worked and what could be better. Your feedback helps us improve FXGuard AI for businesses like yours.</p>
           </div>
-          <a class="btn-secondary"
-             href="https://docs.google.com/forms/d/e/1FAIpQLSd3E97VFGFl7v-9ojSAAmPc4RkE-30tf9YCJ_XUhPuw8JFbBg/viewform?usp=sharing&ouid=104016241045115446299"
-             target="_blank"
-             rel="noopener noreferrer">
-            Open in new tab
-          </a>
         </div>
-        <div class="feedback-frame">
-          <iframe
-            title="FXGuard AI User feedback"
-            src="https://docs.google.com/forms/d/e/1FAIpQLSd3E97VFGFl7v-9ojSAAmPc4RkE-30tf9YCJ_XUhPuw8JFbBg/viewform?embedded=true"
-            loading="lazy"
-            aria-label="FXGuard AI feedback form">
-            Loading feedback form…
-          </iframe>
-        </div>
+        <form id="feedbackForm" class="feedback-form" novalidate>
+          <div class="feedback-grid">
+            <div class="field">
+              <label for="feedbackName">Participant name <span class="optional-label">Optional</span></label>
+              <input id="feedbackName" name="participant_name" type="text" maxlength="100" autocomplete="name" placeholder="Your name" />
+            </div>
+
+            <div class="field">
+              <label for="feedbackCategory">Import category <span class="optional-label">Optional</span></label>
+              <select id="feedbackCategory" name="import_category">
+                <option value="">Choose a category</option>
+                <option value="Raw materials">Raw materials</option>
+                <option value="Minerals">Minerals</option>
+                <option value="Finished goods">Finished goods</option>
+                <option value="Medicine">Medicine</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="field feedback-other-field hidden" id="feedbackOtherCategoryField">
+              <label for="feedbackOtherCategory">Other import category</label>
+              <input id="feedbackOtherCategory" type="text" maxlength="100" placeholder="Enter the category" />
+            </div>
+
+            <div class="field">
+              <label for="feedbackPhone">Phone number <span class="optional-label">Optional</span></label>
+              <input id="feedbackPhone" name="phone_number" type="tel" maxlength="30" autocomplete="tel" placeholder="+250 ..." />
+            </div>
+          </div>
+
+          <div class="feedback-rating-grid">
+            <fieldset class="rating-field">
+              <legend>How clear was FXGuard AI?</legend>
+              <div class="rating-scale" aria-label="Clarity rating from 1 to 5">
+                <label><input type="radio" name="clarity_rating" value="1" required /><span>1</span></label>
+                <label><input type="radio" name="clarity_rating" value="2" /><span>2</span></label>
+                <label><input type="radio" name="clarity_rating" value="3" /><span>3</span></label>
+                <label><input type="radio" name="clarity_rating" value="4" /><span>4</span></label>
+                <label><input type="radio" name="clarity_rating" value="5" /><span>5</span></label>
+              </div>
+              <div class="rating-ends"><span>Not clear</span><span>Very clear</span></div>
+            </fieldset>
+
+            <fieldset class="rating-field">
+              <legend>How useful was FXGuard AI?</legend>
+              <div class="rating-scale" aria-label="Usefulness rating from 1 to 5">
+                <label><input type="radio" name="usefulness_rating" value="1" required /><span>1</span></label>
+                <label><input type="radio" name="usefulness_rating" value="2" /><span>2</span></label>
+                <label><input type="radio" name="usefulness_rating" value="3" /><span>3</span></label>
+                <label><input type="radio" name="usefulness_rating" value="4" /><span>4</span></label>
+                <label><input type="radio" name="usefulness_rating" value="5" /><span>5</span></label>
+              </div>
+              <div class="rating-ends"><span>Not useful</span><span>Very useful</span></div>
+            </fieldset>
+          </div>
+
+          <div class="field">
+            <label for="feedbackComment">What was helpful or confusing?</label>
+            <textarea id="feedbackComment" name="comment" maxlength="2000" rows="5" required placeholder="Share anything that would help us improve the experience."></textarea>
+          </div>
+
+          <div class="feedback-submit-row">
+            <p class="feedback-privacy">Responses are saved to the FXGuard AI research feedback sheet. Do not include bank details, supplier contracts, or confidential business information.</p>
+            <button class="btn-primary" id="feedbackSubmitButton" type="submit">Submit feedback</button>
+          </div>
+          <p class="feedback-status" id="feedbackStatus" role="status" aria-live="polite"></p>
+        </form>
       </div>
+    </section>
+
+    <!-- ============================================================
+         SCREEN: PRIVACY NOTICE
+    ============================================================ -->
+    <section class="screen legal-screen" id="privacy" aria-label="Privacy Notice">
+      <article class="panel legal-document">
+        <p class="legal-kicker">Version 1.0 · 22 July 2026</p>
+        <h2>Privacy Notice</h2>
+        <p class="legal-lead">This notice explains what FXGuard AI collects when you create an account, why it is needed, and the choices you have.</p>
+
+        <h3>Information we collect</h3>
+        <ul>
+          <li>Your verified phone number or email address for signing in and account recovery.</li>
+          <li>The payment checks you choose to save, including currency, invoice amount, check period, risk result, likelihood probability, costs, BNR rate date and model version.</li>
+          <li>Your feedback ratings and comments, plus your name, import category or phone number only when you choose to provide them.</li>
+          <li>Limited security records needed to protect accounts and investigate misuse.</li>
+        </ul>
+        <p>FXGuard AI does not need bank details, card numbers, supplier contact details or copies of invoices. Please do not enter them.</p>
+
+        <h3>Why we use the information</h3>
+        <ul>
+          <li>To create and secure your account.</li>
+          <li>To save your checks and make them available when you return on another device.</li>
+          <li>To provide downloads, deletion and other account controls.</li>
+          <li>To maintain security and meet applicable legal obligations.</li>
+        </ul>
+        <p>Your phone number or email is not used for marketing unless you separately choose to receive marketing messages.</p>
+
+        <h3>Service providers and storage</h3>
+        <p>Account authentication and database storage are provided through Supabase. Phone codes require a configured SMS provider, and email codes use the configured email provider. The application is hosted through Render. These providers may process or store information outside Rwanda. Required registration, contracts and external-storage authorisation must be completed before accounts are enabled for real users.</p>
+
+        <h3>How long we keep information</h3>
+        <p>Saved checks remain while your account is active so you can return to them. You may delete one check, clear your history or delete your account. Information is removed when it is no longer needed, subject to limited security, backup and legal requirements.</p>
+
+        <h3>Your choices and rights</h3>
+        <p>You can access and download your account information, delete saved checks and delete your account. To request a correction or make another privacy request, use the Share feedback page and write <strong>Privacy request</strong> at the start of your message.</p>
+
+        <h3>Device-only checks</h3>
+        <p>Guest checks stay in your browser. They are uploaded to your account only after you choose to save them. Clearing browser data may remove device-only checks.</p>
+
+        <h3>Feedback</h3>
+        <p>The feedback form is provided within FXGuard AI. Validated responses are stored in a local Excel backup and forwarded to the project's Google Forms response sheet. Feedback is handled separately from your FXGuard AI account and is not linked to your account unless you clearly choose to identify yourself.</p>
+
+        <div class="legal-note">This is a plain-language product notice. It should be reviewed by a Rwanda-qualified privacy professional before production use.</div>
+      </article>
+    </section>
+
+    <!-- ============================================================
+         SCREEN: TERMS OF USE
+    ============================================================ -->
+    <section class="screen legal-screen" id="terms" aria-label="Terms of Use">
+      <article class="panel legal-document">
+        <p class="legal-kicker">Version 1.0 · 22 July 2026</p>
+        <h2>Terms of Use</h2>
+        <p class="legal-lead">These terms explain how FXGuard AI may be used and what its payment checks do and do not mean.</p>
+
+        <h3>Decision support only</h3>
+        <p>FXGuard AI estimates RWF depreciation risk using recent and past BNR exchange-rate information. It supports business planning. It does not provide financial advice, promise a future exchange rate, transfer money or decide when a supplier should be paid.</p>
+
+        <h3>Your responsibility</h3>
+        <p>You remain responsible for payment and business decisions. Consider supplier terms, available cash, professional support and current market information alongside this platform.</p>
+
+        <h3>Your account</h3>
+        <p>Use a phone number or email address you control. Do not share verification codes. Tell the FXGuard AI team if you believe someone has accessed your account. You are responsible for information saved through your account until access is reported or removed.</p>
+
+        <h3>Acceptable use</h3>
+        <ul>
+          <li>Do not attempt to access another user’s information.</li>
+          <li>Do not disrupt, reverse engineer or misuse the service.</li>
+          <li>Do not upload unlawful information or unnecessary personal and banking details.</li>
+          <li>Do not present estimates as guaranteed outcomes or professional advice.</li>
+        </ul>
+
+        <h3>Rates, models and availability</h3>
+        <p>Results depend on the BNR rate date and model version shown in each check. Data, models and availability may change. Older saved results remain snapshots of the information used when they were created.</p>
+
+        <h3>Your information</h3>
+        <p>The Privacy Notice explains how account and saved-check information is handled. You keep ownership of the business information you enter and allow FXGuard AI to process it only to provide and secure the requested service.</p>
+
+        <h3>Account suspension or closure</h3>
+        <p>Access may be limited where necessary to protect users, investigate misuse or comply with law. You may delete your account from Account settings.</p>
+
+        <h3>Changes to these terms</h3>
+        <p>If an important change affects account use or personal information, users should be shown the new version and asked to accept it before continuing.</p>
+
+        <div class="legal-note">These terms are a product draft and should receive qualified legal review before production launch.</div>
+      </article>
     </section>
 
   </main>
 
   <!-- Toast notification -->
   <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Sign in and account creation -->
+  <div class="modal-overlay hidden" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+    <div class="modal auth-modal">
+      <div class="modal-header">
+        <div>
+          <p class="auth-modal-kicker" id="authModalKicker">Account</p>
+          <h2 class="modal-title" id="authModalTitle">Sign in</h2>
+        </div>
+        <button class="modal-close" id="authModalClose" type="button" aria-label="Close account window">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="authUnavailable" class="auth-unavailable hidden">
+          <strong>Account connection is not ready</strong>
+          <p id="authUnavailableMessage">You can continue using payment checks as a guest. Connect Supabase to enable accounts and cloud history.</p>
+        </div>
+
+        <div id="authContactStage">
+          <p class="modal-intro" id="authIntro">Choose where to receive your one-time sign-in code.</p>
+          <div class="auth-method-tabs" id="authMethodTabs" role="group" aria-label="Choose phone or email">
+            <button class="active" type="button" data-auth-channel="phone">Phone</button>
+            <button type="button" data-auth-channel="email">Email</button>
+          </div>
+
+          <form id="authContactForm" class="auth-form" novalidate>
+            <div class="form-group" id="authPhoneGroup">
+              <label for="authPhone">Phone number</label>
+              <div class="phone-input-row">
+                <select id="authCountryCode" aria-label="Country code">
+                  <option value="+250">RW +250</option>
+                  <option value="+254">KE +254</option>
+                  <option value="+256">UG +256</option>
+                  <option value="+255">TZ +255</option>
+                  <option value="+257">BI +257</option>
+                  <option value="+243">CD +243</option>
+                </select>
+                <input id="authPhone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="78 123 4567">
+              </div>
+            </div>
+
+            <div class="form-group hidden" id="authEmailGroup">
+              <label for="authEmail">Email address</label>
+              <input id="authEmail" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com">
+            </div>
+
+            <label class="legal-acceptance hidden" id="legalAcceptance">
+              <input id="acceptLegal" type="checkbox" aria-describedby="authContactError">
+              <span>I agree to the <button type="button" data-open-legal="terms">Terms of Use</button> and acknowledge the <button type="button" data-open-legal="privacy">Privacy Notice</button>.</span>
+            </label>
+
+            <p class="auth-error hidden" id="authContactError" role="alert"></p>
+            <button class="btn-primary auth-submit" id="sendCodeButton" type="submit">
+              <span class="btn-label">Send code</span>
+            </button>
+          </form>
+          <p class="auth-switch-copy" id="authSwitchCopy"></p>
+        </div>
+
+        <div id="authCodeStage" class="hidden">
+          <p class="modal-intro" id="codeSentMessage">Enter the code we sent you.</p>
+          <form id="authCodeForm" class="auth-form" novalidate>
+            <div class="form-group">
+              <label for="authCode">One-time code</label>
+              <input id="authCode" class="otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="000000">
+            </div>
+            <p class="auth-error hidden" id="authCodeError" role="alert"></p>
+            <button class="btn-primary auth-submit" id="verifyCodeButton" type="submit">
+              <span class="btn-label">Continue</span>
+            </button>
+            <button class="auth-text-button" id="changeContactButton" type="button">Use a different phone or email</button>
+          </form>
+        </div>
+
+        <div id="migrationStage" class="hidden">
+          <div class="migration-icon" aria-hidden="true">↗</div>
+          <h3>Save checks from this device?</h3>
+          <p id="migrationMessage">Your guest checks are still only in this browser. You can add them to your account now.</p>
+          <div class="migration-actions">
+            <button class="btn-primary" id="importLocalChecksButton" type="button">Save to my account</button>
+            <button class="btn-secondary" id="skipMigrationButton" type="button">Not now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account settings -->
+  <div class="modal-overlay hidden" id="accountModal" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
+    <div class="modal account-modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="accountModalTitle">Your account</h2>
+        <button class="modal-close" id="accountModalClose" type="button" aria-label="Close account settings">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="modal-body account-settings-body">
+        <div class="account-summary">
+          <span class="account-user-dot" aria-hidden="true"></span>
+          <div><strong id="accountSettingsIdentifier">Signed in</strong><span>Your saved checks are available on your devices.</span></div>
+        </div>
+
+        <div class="account-setting-row">
+          <div><strong>Checks on this device</strong><span>Move guest checks into your account only when you choose.</span></div>
+          <button class="btn-secondary" id="accountImportButton" type="button">Save to account</button>
+        </div>
+        <div class="account-setting-row">
+          <div><strong>Download my information</strong><span>Get your account, saved checks and consent history as JSON.</span></div>
+          <button class="btn-secondary" id="exportAccountButton" type="button">Download</button>
+        </div>
+        <div class="account-setting-row">
+          <div><strong>Sign out</strong><span>Device-only guest checks will remain in this browser.</span></div>
+          <button class="btn-secondary" id="logoutButton" type="button">Sign out</button>
+        </div>
+
+        <p class="auth-unavailable hidden" id="accountDeletionUnavailable">
+          Permanent account deletion needs final server configuration. You can still delete saved checks, download your information, and sign out.
+        </p>
+        <div class="account-danger-zone" id="accountDangerZone">
+          <button class="auth-text-button danger-text" id="showDeleteAccountButton" type="button">Delete my account</button>
+          <div class="delete-account-confirm hidden" id="deleteAccountConfirm">
+            <p>This permanently deletes your account and cloud-saved checks. Type <strong>DELETE</strong> to confirm.</p>
+            <input id="deleteAccountInput" type="text" autocomplete="off" aria-label="Type DELETE to confirm account deletion">
+            <button class="danger-button" id="deleteAccountButton" type="button" disabled>Delete account permanently</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Risk definitions modal -->
   <div class="modal-overlay hidden" id="riskModal" role="dialog" aria-modal="true" aria-labelledby="riskModalTitle">
@@ -501,6 +833,7 @@
     </div>
   </div>
 
-  <script src="/static/app.js?v=30"></script>
+  <script src="/static/app.js?v=43"></script>
+  <script src="/static/accounts.js?v=6"></script>
 </body>
 </html>
