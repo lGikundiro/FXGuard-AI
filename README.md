@@ -1,13 +1,13 @@
 # FXGuard AI — Multi-currency Exchange Rate Risk Forecasting
 
-FXGuard AI is a full-stack experimental web application for classifying short-term foreign-currency/RWF depreciation pressure and estimating payment-planning scenarios for Rwanda-based importers. It does not stop depreciation, hedge a currency position, or provide financial advice.
+FXGuard AI is a machine learning-driven, progressive web application for classifying short-term foreign-currency/RWF depreciation risk and estimating payment-planning scenarios for Rwanda-based importers. It does not stop depreciation, hedge a currency position, or provide financial advice.
 
 The prototype supports **USD, EUR, and KES against RWF**. Users select an invoice payment date from tomorrow through 100 days ahead; each currency has one horizon-aware classifier trained on every integer period from 1 to 100 calendar days.
 
 Fast-loading interface: https://fxguard-ai-web.onrender.com/
 
 API and fallback interface: https://fxguard-ai.onrender.com/
-YouTube Demo: https://youtu.be/jNrEOB-uwfE
+
 
 ## What the project includes
 
