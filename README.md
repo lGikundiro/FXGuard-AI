@@ -1,8 +1,8 @@
 # FXGuard AI — Multi-currency Exchange Rate Risk Forecasting
 
-FXGuard AI is a full-stack web application with machine-learning models for classifying short-term foreign-currency/RWF depreciation risk for Rwanda-based importers.
+FXGuard AI is a full-stack experimental web application for classifying short-term foreign-currency/RWF depreciation pressure and estimating payment-planning scenarios for Rwanda-based importers. It does not stop depreciation, hedge a currency position, or provide financial advice.
 
-The prototype supports **USD, EUR, and KES against RWF**. Each currency has its own 7-day and 14-day classifier trained on official BNR exchange-rate history.
+The prototype supports **USD, EUR, and KES against RWF**. Users select an invoice payment date from tomorrow through 100 days ahead; each currency has one horizon-aware classifier trained on every integer period from 1 to 100 calendar days.
 
 Fast-loading interface: https://fxguard-ai-web.onrender.com/
 
@@ -13,7 +13,7 @@ YouTube Demo: https://youtu.be/jNrEOB-uwfE
 
 - Official BNR buying, average, and selling rates imported from Excel exports
 - More than four years of USD/RWF, EUR/RWF, and KES/RWF history
-- Per-currency feature datasets and trained 7-day/14-day classifiers
+- Three horizon-aware classifiers covering payment dates 1–100 days ahead
 - FastAPI backend
 - Web interface frontend
 - Decision-support output for importers
@@ -40,7 +40,7 @@ FXGuard_AI_Project/
   frontend/accounts.js           # account, consent, and cloud-history behavior
   supabase/migrations/           # PostgreSQL tables and row-level access policies
   scripts/sync_multicurrency_rates.py   # refresh rate histories/features
-  scripts/train_multicurrency_models.py # retrain all currency models
+  scripts/train_flexible_horizon_models.py # retrain active 1-100-day models
   reports/                       # dataset summaries and user feedback output
   render.yaml                    # Render deployment blueprint
   requirements.txt
@@ -144,7 +144,7 @@ AUTH_SELF_DELETE_RPC
 
 `AUTH_METHODS` is a comma-separated list of providers that are already enabled in Supabase Auth. The current configuration uses `email`; add `phone` only after configuring an SMS provider.
 
-Apply both SQL files in `supabase/migrations/`. Migration `002_self_service_account_deletion.sql` enables narrowly scoped self-service account deletion without exposing an administrative key. `SUPABASE_SERVICE_ROLE_KEY` remains an optional server-only administrative fallback; never add it to `frontend/`, source control, screenshots, or browser configuration.
+Apply all SQL files in `supabase/migrations/` in numeric order. Migration `002_self_service_account_deletion.sql` enables narrowly scoped self-service account deletion, and migration `003_flexible_payment_dates.sql` adds the selected payment date and expands saved periods to 1–100 days. `SUPABASE_SERVICE_ROLE_KEY` remains an optional server-only administrative fallback; never add it to `frontend/`, source control, screenshots, or browser configuration.
 
 For local PowerShell, set the values for the current terminal before starting the app:
 
@@ -186,7 +186,7 @@ The deployment uses Python `3.12.10` from `.python-version`. The Blueprint also 
 
 ## Rate data source
 
-Bundled historical USD, EUR, and KES data comes exclusively from the official BNR Excel exports in `data/raw/`. Their published buying, average, and selling rates are retained, and the average rate is used as the model's `mid_rate`.
+Bundled historical USD, EUR, and KES data comes exclusively from the official BNR Excel exports in `data/raw/`. Their published buying, average, and selling rates are retained, and the average rate is used as the model's `mid_rate`. The application may use a forward-filled calendar series for charts, but model features and labels use official BNR posting rows only. For each 1–100-day training period, the outcome uses the first official posting on or after the calendar target date.
 
 The application does not synthesize rates or fetch them through a third-party provider. It serves the most recently imported official records and clearly reports their date through `/api/data-freshness`.
 
@@ -194,11 +194,10 @@ To refresh the data, download the new USD, EUR, and KES records from BNR's excha
 
 ## Model details
 
-The prototype trains two models for each supported currency:
+The prototype trains one flexible model for each supported currency:
 
-- `risk_model_<CURRENCY>_7d.pkl` — classifies 7-day depreciation pressure
-- `risk_model_<CURRENCY>_14d.pkl` — classifies 14-day depreciation pressure
-- Training compares logistic regression, random forest, and XGBoost for every currency/horizon.
+- `risk_model_<CURRENCY>_flexible.pkl` accepts `horizon_days` from 1 through 100 as a model feature.
+- Training compares Logistic Regression, Random Forest, and XGBoost independently for each currency.
 
 Risk classes:
 
@@ -225,27 +224,30 @@ Features used:
 - `spread_pct`
 - `depreciation_days_7d`
 - `depreciation_days_14d`
+- `horizon_days`
 
 ## Retrain the models
 
 ```bash
 python scripts/sync_multicurrency_rates.py
-python scripts/train_multicurrency_models.py
+python scripts/train_flexible_horizon_models.py
 ```
 
-This validates the three official BNR Excel histories and recreates the multi-currency datasets, six model files, and:
+This validates the three official BNR Excel histories and recreates the feature data, three active model files, and:
 
 ```text
-backend/models/multicurrency_model_metadata.json
+backend/models/flexible_horizon_model_metadata.json
 ```
 
-The metadata records each chronological train/test window, class distribution, candidate metrics, selected classifier, data date, and per-currency label thresholds. Treat the likelihood probability as a decision-support signal: it is not a guarantee of the future exchange rate, and some recent validation windows have limited class variety.
+The metadata records each chronological train/test window, class distribution, candidate and baseline metrics, selected classifier, reliability-gate result, data date, and per-currency label thresholds. Backtest thresholds are calculated from each earlier training window only; later observations do not define earlier labels. Treat the displayed value as an uncalibrated model score, not a real-world probability or guarantee.
 
-Model selection uses three expanding-window rolling-origin backtest folds for every currency and horizon. These folds stay within the first 80% of the history, while the final 20% remains an untouched holdout. A 7-row or 14-row purge gap separates each training and test window to prevent future-derived labels from crossing the evaluation boundary. After evaluation, the selected production model is refitted on all labeled observations. Detailed results are written to `reports/multicurrency_model_evaluation.md`.
+Model selection uses three expanding-window rolling-origin folds. Requested horizon is part of the model input and every integer horizon from 1 to 100 days appears in training. Any training outcome that reaches the following test period is purged, creating up to a 100-day boundary gap. Thresholds are learned separately for each horizon from earlier training dates only. Detailed results are written to `reports/flexible_horizon_model_evaluation.md`.
+
+The provisional research gate requires mean balanced accuracy of at least 0.55, mean macro F1 of at least 0.45, and a balanced-accuracy improvement of at least 0.05 over a most-frequent-class baseline. These are project-defined thresholds, not universal industry standards. As of 2 August 2026, none of the three flexible models passes all three conditions, so the application labels their use as experimental and displays scores with an approximation sign. See `reports/panel_feedback_response.md` for the panel-response rationale and evidence review.
 
 Current testing documentation:
 
-- `reports/multicurrency_model_evaluation.md` — generated fold-by-fold multicurrency metrics
+- `reports/flexible_horizon_model_evaluation.md` — generated 1–100-day evaluation and horizon-band metrics
 - `reports/testing_and_backtesting_report.md` — plain-language technical report, conclusion, and presentation summary
 - `reports/README.md` — report index distinguishing current evidence from preserved USD-only material
 
@@ -271,9 +273,17 @@ Example prediction request:
 {
   "currency": "EUR",
   "amount": 10000,
-  "horizon": 7
+  "payment_date": "2026-08-28"
 }
 ```
+
+`payment_date` must be after the API server's current Rwanda date and no more
+than 100 calendar days ahead. The server calculates `horizon_days`; clients do
+not send or control that value. Prediction responses include the validated
+`payment_date`, calculated `horizon_days`, experimental reliability status, and
+an uncalibrated `model_score`. The interface renders that score with an
+approximation sign, for example `≈ 72%`, rather than presenting it as a verified
+probability or guarantee.
 
 ## Important academic note
 
@@ -310,7 +320,7 @@ The frontend is still a single-file MVP, but the most immediate bugs have been c
 
 ## Notebooks
 
-The overview notebook describes the current multicurrency system. Notebooks `01` through `05` preserve the guided **original USD/RWF workflow** used during early project development. They are useful for explaining the data-science steps, but they do not train the active multicurrency production artifacts. Use `scripts/sync_multicurrency_rates.py` and `scripts/train_multicurrency_models.py` for the current USD/EUR/KES system.
+The overview notebook describes the current multicurrency system. Notebooks `01` through `05` preserve the guided **original USD/RWF workflow** used during early project development. They are useful for explaining the data-science steps, but they do not train the active multicurrency production artifacts. Use `scripts/sync_multicurrency_rates.py` and `scripts/train_flexible_horizon_models.py` for the current USD/EUR/KES system.
 
 1. `00_project_overview.ipynb` — current USD/EUR/KES product, data, model, API, account, and deployment overview
 2. `01_data_collection_and_cleaning.ipynb` — load BNR Excel export and clean USD/RWF rates

@@ -176,7 +176,14 @@ def build_daily_calendar(observations: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_features(group: pd.DataFrame) -> pd.DataFrame:
+    """Create predictors from real BNR postings only.
+
+    Rolling windows count official observations, not forward-filled calendar rows.
+    This prevents weekends and non-posting days from being learned as artificial
+    zero-return observations.
+    """
     frame = group.sort_values("date").copy()
+    frame["observation_gap_days"] = frame["date"].diff().dt.days
     frame["daily_return"] = frame["mid_rate"].pct_change(fill_method=None)
     frame["return_7d"] = frame["mid_rate"].pct_change(7, fill_method=None)
     frame["return_14d"] = frame["mid_rate"].pct_change(14, fill_method=None)
@@ -194,8 +201,23 @@ def add_features(group: pd.DataFrame) -> pd.DataFrame:
     depreciated = (frame["daily_return"] > 0).astype(int)
     frame["depreciation_days_7d"] = depreciated.rolling(7).sum()
     frame["depreciation_days_14d"] = depreciated.rolling(14).sum()
-    frame["future_7d_change"] = frame["mid_rate"].shift(-7) / frame["mid_rate"] - 1
-    frame["future_14d_change"] = frame["mid_rate"].shift(-14) / frame["mid_rate"] - 1
+    for horizon in (7, 14):
+        lookup = frame[["date", "mid_rate"]].rename(
+            columns={"date": f"future_{horizon}d_date", "mid_rate": f"future_{horizon}d_rate"}
+        )
+        targets = frame[["date"]].copy()
+        targets["target_date"] = targets["date"] + pd.Timedelta(days=horizon)
+        matched = pd.merge_asof(
+            targets.sort_values("target_date"),
+            lookup.sort_values(f"future_{horizon}d_date"),
+            left_on="target_date",
+            right_on=f"future_{horizon}d_date",
+            direction="forward",
+        ).sort_values("date")
+        frame[f"future_{horizon}d_date"] = matched[f"future_{horizon}d_date"].to_numpy()
+        frame[f"future_{horizon}d_change"] = (
+            matched[f"future_{horizon}d_rate"].to_numpy() / frame["mid_rate"].to_numpy() - 1
+        )
     return frame
 
 
@@ -227,9 +249,11 @@ def add_currency_labels(features: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
 def main() -> None:
     source_files = discover_raw_files()
     observations = load_direct_observations(source_files)
+    # The calendar series remains available for charts. Model features are built
+    # only from official postings so forward-filled weekends cannot distort them.
     daily = build_daily_calendar(observations)
     features = pd.concat(
-        [add_features(daily.loc[daily["currency"] == currency]) for currency in CURRENCIES],
+        [add_features(observations.loc[observations["currency"] == currency]) for currency in CURRENCIES],
         ignore_index=True,
     )
     features, thresholds = add_currency_labels(features)
@@ -246,8 +270,11 @@ def main() -> None:
     for horizon in (7, 14):
         label_column = f"risk_label_{horizon}d"
         future_column = f"future_{horizon}d_change"
+        future_date_column = f"future_{horizon}d_date"
         model_ready = features.dropna(subset=feature_columns + [label_column]).copy()
-        model_ready[["date", "currency", *feature_columns, future_column, label_column]].to_csv(
+        model_ready[[
+            "date", "currency", *feature_columns, future_date_column, future_column, label_column
+        ]].to_csv(
             DATA_DIR / f"multicurrency_model_ready_{horizon}d.csv", index=False
         )
 
@@ -270,6 +297,12 @@ def main() -> None:
         "first_date": str(observations["date"].min().date()),
         "latest_date": str(observations["date"].max().date()),
         "label_thresholds": thresholds,
+        "model_preprocessing": {
+            "training_rows": "official BNR observations only",
+            "calendar_series_use": "display only; forward-filled dates are excluded from model training",
+            "forecast_horizons": "calendar days; the first official posting on or after the target date supplies the outcome",
+            "rolling_window_unit": "official observations",
+        },
     }
     metadata["raw_files"] = {
         currency: [

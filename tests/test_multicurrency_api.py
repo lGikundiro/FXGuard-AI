@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 import urllib.parse
+from datetime import date, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -20,6 +21,7 @@ from backend.app.main import (
     history,
     latest_rate,
     predict_risk,
+    rwanda_today,
 )
 
 
@@ -49,14 +51,22 @@ class MultiCurrencyApiTests(unittest.TestCase):
                 self.assertEqual(len(rate_history["points"]), 30)
 
                 payload = predict_risk(
-                    RiskRequest(currency=currency, amount=1000, horizon=7)
+                    RiskRequest(
+                        currency=currency,
+                        amount=1000,
+                        payment_date=rwanda_today() + timedelta(days=37),
+                    )
                 )
                 self.assertEqual(payload["currency"], currency)
                 self.assertEqual(payload["amount"], 1000)
+                self.assertEqual(payload["horizon_days"], 37)
+                self.assertEqual(payload["payment_date"], str(rwanda_today() + timedelta(days=37)))
                 self.assertIn(payload["risk_level"], {"Low", "Medium", "High"})
                 self.assertGreater(payload["current_cost_rwf"], 0)
                 self.assertGreaterEqual(payload["confidence_score"], 0)
                 self.assertLessEqual(payload["confidence_score"], 1)
+                self.assertTrue(payload["score_is_approximate"])
+                self.assertEqual(payload["score_calibration"], "uncalibrated")
                 self.assertAlmostEqual(
                     sum(payload["class_probabilities"].values()), 1,
                     places=3,
@@ -69,14 +79,45 @@ class MultiCurrencyApiTests(unittest.TestCase):
                     latest_rate(currency)
                 self.assertEqual(context.exception.status_code, 400)
 
+    def test_payment_date_must_be_between_one_and_one_hundred_days(self):
+        for days in (0, 101):
+            with self.subTest(days=days):
+                with self.assertRaises(HTTPException) as context:
+                    predict_risk(
+                        RiskRequest(
+                            currency="USD",
+                            amount=1000,
+                            payment_date=rwanda_today() + timedelta(days=days),
+                        )
+                    )
+                self.assertEqual(context.exception.status_code, 400)
+
+    def test_payment_date_boundary_days_are_supported(self):
+        for days in (1, 100):
+            with self.subTest(days=days):
+                payload = predict_risk(
+                    RiskRequest(
+                        currency="USD",
+                        amount=1000,
+                        payment_date=rwanda_today() + timedelta(days=days),
+                    )
+                )
+                self.assertEqual(payload["horizon_days"], days)
+
     def test_excel_export_is_a_valid_workbook(self):
-        result = predict_risk(RiskRequest(currency="KES", amount=3000, horizon=7))
+        result = predict_risk(
+            RiskRequest(
+                currency="KES",
+                amount=3000,
+                payment_date=rwanda_today() + timedelta(days=45),
+            )
+        )
         workbook = load_workbook(build_excel_report(result), data_only=True)
         sheet = workbook["Risk Assessment"]
         self.assertEqual(sheet["A1"].value, "FXGUARD AI — PAYMENT CHECK REPORT")
         self.assertIn("SUMMARY", [cell.value for cell in sheet["A"]])
         self.assertIn(
-            "HOW LIKELY EACH RISK LEVEL IS",
+            "HOW FXGUARD COMPARED THE RISK LEVELS",
             [cell.value for cell in sheet["A"]],
         )
         self.assertIn("WHAT THIS RESULT IS BASED ON", [cell.value for cell in sheet["A"]])

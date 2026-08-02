@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-27",
+  "generated_at": "2026-08-02",
   "source": "Direct National Bank of Rwanda Excel exports",
   "source_url": "https://www.bnr.rw/exchangeRate",
   "delivery_mode": "manual official export",
@@ -32,23 +32,29 @@
   "latest_date": "2026-07-27",
   "label_thresholds": {
     "USD": {
-      "7d_low_max": 0.0013982075755660794,
-      "7d_medium_max": 0.002559074766524683,
-      "14d_low_max": 0.002807729514191948,
-      "14d_medium_max": 0.005178646083642803
+      "7d_low_max": 0.0014178103992052993,
+      "7d_medium_max": 0.0026069081703081753,
+      "14d_low_max": 0.002855460953462119,
+      "14d_medium_max": 0.005196218203646685
     },
     "EUR": {
-      "7d_low_max": 0.001230309710912758,
-      "7d_medium_max": 0.008949082561805403,
+      "7d_low_max": 0.001398472698656894,
+      "7d_medium_max": 0.009165895062901885,
       "14d_low_max": 0.002518121996143874,
-      "14d_medium_max": 0.014494317435696714
+      "14d_medium_max": 0.014490744591385107
     },
     "KES": {
-      "7d_low_max": 0.00023128584852605272,
-      "7d_medium_max": 0.0021248752134505728,
-      "14d_low_max": 0.0005720331895006092,
-      "14d_medium_max": 0.004247455235620564
+      "7d_low_max": 0.0002643486679512197,
+      "7d_medium_max": 0.002129758222632505,
+      "14d_low_max": 0.0006468601476586899,
+      "14d_medium_max": 0.004268833176032327
     }
+  },
+  "model_preprocessing": {
+    "training_rows": "official BNR observations only",
+    "calendar_series_use": "display only; forward-filled dates are excluded from model training",
+    "forecast_horizons": "calendar days; the first official posting on or after the target date supplies the outcome",
+    "rolling_window_unit": "official observations"
   },
   "raw_files": {
     "USD": [

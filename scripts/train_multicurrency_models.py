@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
 import joblib
 import pandas as pd
 from sklearn.base import clone
+from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
@@ -33,6 +34,12 @@ CURRENCIES = ("USD", "EUR", "KES")
 CLASS_ORDER = ("Low", "Medium", "High")
 FINAL_TRAIN_RATIO = 0.80
 BACKTEST_WINDOWS = ((0.50, 0.60), (0.60, 0.70), (0.70, 0.80))
+# These are project deployment gates, not universal scientific cut-offs. They
+# are declared before evaluation so a weak result cannot be called trustworthy
+# after the fact.
+MIN_BALANCED_ACCURACY = 0.55
+MIN_MACRO_F1 = 0.45
+MIN_BASELINE_IMPROVEMENT = 0.05
 FEATURE_COLUMNS = [
     "mid_rate", "daily_return", "return_7d", "return_14d", "ma_7", "ma_14", "ma_30",
     "ma_gap", "volatility_7d", "volatility_14d", "volatility_30d", "momentum_7d",
@@ -106,10 +113,49 @@ def purged_chronological_split(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Return an earlier training set and later holdout with a target-leakage gap."""
     test_start = int(len(dataset) * train_ratio)
-    train_end = test_start - horizon
-    if train_end <= 0 or test_start >= len(dataset):
+    if test_start >= len(dataset):
         raise ValueError("Dataset is too small for the requested chronological split.")
-    return dataset.iloc[:train_end].copy(), dataset.iloc[test_start:].copy()
+    test = dataset.iloc[test_start:].copy()
+    target_column = f"future_{horizon}d_date"
+    if target_column in dataset.columns:
+        test_start_date = test["date"].min()
+        eligible = pd.to_datetime(dataset[target_column]) < test_start_date
+        train = dataset.iloc[:test_start].loc[eligible.iloc[:test_start]].copy()
+    else:
+        train_end = test_start - horizon
+        if train_end <= 0:
+            raise ValueError("Dataset is too small for the requested chronological split.")
+        train = dataset.iloc[:train_end].copy()
+    if train.empty:
+        raise ValueError("Dataset is too small for the requested chronological split.")
+    return train, test
+
+
+def label_with_thresholds(values: pd.Series, low: float, high: float) -> pd.Series:
+    labels = pd.Series("High", index=values.index, dtype=object)
+    labels.loc[values <= high] = "Medium"
+    labels.loc[values <= low] = "Low"
+    labels.loc[values.isna()] = None
+    return labels
+
+
+def relabel_from_training(
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+    horizon: int,
+) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
+    """Derive label boundaries from training data only to avoid look-ahead."""
+    future_column = f"future_{horizon}d_change"
+    label_column = f"risk_label_{horizon}d"
+    if future_column not in train.columns:
+        return train, test, {}
+    low = float(train[future_column].quantile(0.50))
+    high = float(train[future_column].quantile(0.80))
+    train = train.copy()
+    test = test.copy()
+    train[label_column] = label_with_thresholds(train[future_column], low, high)
+    test[label_column] = label_with_thresholds(test[future_column], low, high)
+    return train, test, {"low_max": low, "medium_max": high, "source": "training_window_only"}
 
 
 def rolling_origin_backtest(
@@ -126,16 +172,20 @@ def rolling_origin_backtest(
     for fold_number, (train_ratio, test_ratio) in enumerate(windows, start=1):
         test_start = int(len(dataset) * train_ratio)
         test_end = int(len(dataset) * test_ratio)
-        train_end = test_start - horizon
         if not 0 < train_ratio < test_ratio <= FINAL_TRAIN_RATIO:
             raise ValueError("Backtest windows must be ordered and end within the training period.")
-        if train_end <= 0 or test_end <= test_start:
+        if test_end <= test_start:
             raise ValueError("Dataset is too small for the requested backtest windows.")
         if test_start < previous_test_end:
             raise ValueError("Backtest test windows must not overlap.")
 
-        train = dataset.iloc[:train_end].copy()
+        train, _ = purged_chronological_split(
+            dataset.iloc[:test_end].copy(),
+            horizon,
+            train_ratio=test_start / test_end,
+        )
         test = dataset.iloc[test_start:test_end].copy()
+        train, test, fold_thresholds = relabel_from_training(train, test, horizon)
         model = clone(base_model)
         model.fit(train[FEATURE_COLUMNS], train[label_column])
         fold_metrics = metrics(test[label_column], model.predict(test[FEATURE_COLUMNS]))
@@ -145,6 +195,7 @@ def rolling_origin_backtest(
                 "training_rows": int(len(train)),
                 "test_rows": int(len(test)),
                 "purge_gap_rows": int(horizon),
+                "actual_purged_rows": int(test_start - len(train)),
                 "train_start": str(train["date"].min().date()),
                 "train_end": str(train["date"].max().date()),
                 "test_start": str(test["date"].min().date()),
@@ -152,6 +203,7 @@ def rolling_origin_backtest(
                 "train_class_distribution": class_distribution(train[label_column]),
                 "test_class_distribution": class_distribution(test[label_column]),
                 "metrics": fold_metrics,
+                "label_thresholds": fold_thresholds,
             }
         )
         previous_test_end = test_end
@@ -184,6 +236,33 @@ def backtest_selection_score(backtest: dict) -> tuple:
     )
 
 
+def assess_reliability(selected: dict, baseline: dict) -> dict:
+    model_metrics = selected["aggregate_metrics"]
+    baseline_metrics = baseline["aggregate_metrics"]
+    balanced = model_metrics["balanced_accuracy"]
+    macro_f1 = model_metrics["f1_macro"]
+    baseline_balanced = baseline_metrics["balanced_accuracy"]
+    improvement = None if balanced is None or baseline_balanced is None else balanced - baseline_balanced
+    checks = {
+        "balanced_accuracy_at_least_0_55": balanced is not None and balanced >= MIN_BALANCED_ACCURACY,
+        "macro_f1_at_least_0_45": macro_f1 is not None and macro_f1 >= MIN_MACRO_F1,
+        "balanced_accuracy_beats_baseline_by_0_05": improvement is not None and improvement >= MIN_BASELINE_IMPROVEMENT,
+    }
+    return {
+        "status": "meets_provisional_gate" if all(checks.values()) else "experimental_not_trustworthy",
+        "gate_is_project_defined": True,
+        "checks": checks,
+        "balanced_accuracy_improvement_over_baseline": (
+            None if improvement is None else round(float(improvement), 4)
+        ),
+        "required": {
+            "mean_balanced_accuracy": MIN_BALANCED_ACCURACY,
+            "mean_macro_f1": MIN_MACRO_F1,
+            "minimum_balanced_accuracy_improvement_over_baseline": MIN_BASELINE_IMPROVEMENT,
+        },
+    }
+
+
 def format_metric(value) -> str:
     return "unavailable" if value is None else f"{value:.4f}"
 
@@ -201,8 +280,8 @@ def write_evaluation_report(output: dict) -> Path:
         ),
         "",
         (
-            "A horizon-length purge gap is removed between every training and test "
-            "window so labels derived from future rates cannot cross the boundary."
+            "Any training row whose future outcome date reaches a test window is "
+            "removed so labels derived from future rates cannot cross the boundary."
         ),
         (
             "After model selection and holdout evaluation, the selected production "
@@ -236,7 +315,17 @@ def write_evaluation_report(output: dict) -> Path:
                         f"{info['deployment_train_end']} "
                         f"({info['deployment_training_rows']} rows)"
                     ),
-                    f"- Purge gap: {info['purge_gap_rows']} rows",
+                    (
+                        f"- Outcome-date purge: {info['actual_purged_rows']} official "
+                        "observations removed at the final holdout boundary"
+                    ),
+                    f"- Reliability status: `{info['reliability']['status']}`",
+                    (
+                        "- Most-frequent baseline: balanced accuracy "
+                        f"{format_metric(info['baseline']['aggregate_metrics']['balanced_accuracy'])}, "
+                        "macro F1 "
+                        f"{format_metric(info['baseline']['aggregate_metrics']['f1_macro'])}"
+                    ),
                     (
                         "- Mean backtest metrics: accuracy "
                         f"{format_metric(aggregate['accuracy'])}, balanced accuracy "
@@ -260,6 +349,7 @@ def write_evaluation_report(output: dict) -> Path:
                     (
                         f"- Fold {fold['fold']}: train through {fold['train_end']}; "
                         f"test {fold['test_start']} to {fold['test_end']}; "
+                        f"purged {fold['actual_purged_rows']} boundary observations; "
                         f"balanced accuracy "
                         f"{format_metric(fold_metrics['balanced_accuracy'])}; "
                         f"macro F1 {format_metric(fold_metrics['f1_macro'])}"
@@ -291,12 +381,19 @@ def main() -> None:
             dataset = dataset.loc[dataset["currency"] == currency].sort_values("date").reset_index(drop=True)
             label_column = f"risk_label_{horizon}d"
             train, test = purged_chronological_split(dataset, horizon)
+            train, test, holdout_thresholds = relabel_from_training(train, test, horizon)
             X_train, y_train = train[FEATURE_COLUMNS], train[label_column]
             X_test, y_test = test[FEATURE_COLUMNS], test[label_column]
 
             evaluations = {}
             backtests = {}
             candidate_models = candidates()
+            baseline_backtest = rolling_origin_backtest(
+                DummyClassifier(strategy="most_frequent"),
+                dataset,
+                label_column,
+                horizon,
+            )
             for name, model in candidate_models.items():
                 backtests[name] = rolling_origin_backtest(
                     model,
@@ -308,6 +405,7 @@ def main() -> None:
                 evaluations[name] = metrics(y_test, model.predict(X_test))
 
             best_name = max(backtests, key=lambda name: backtest_selection_score(backtests[name]))
+            reliability = assess_reliability(backtests[best_name], baseline_backtest)
             deployment_model = clone(candidate_models[best_name])
             deployment_model.fit(dataset[FEATURE_COLUMNS], dataset[label_column])
             model_path = MODEL_DIR / f"risk_model_{currency}_{horizon}d.pkl"
@@ -318,11 +416,16 @@ def main() -> None:
                     "Highest mean rolling-origin balanced accuracy, then macro F1 "
                     "and accuracy; final holdout excluded from model selection."
                 ),
+                "reliability": reliability,
+                "baseline": baseline_backtest,
+                "holdout_label_thresholds": holdout_thresholds,
                 "model_file": model_path.name,
                 "training_rows": int(len(train)),
                 "test_rows": int(len(test)),
                 "deployment_training_rows": int(len(dataset)),
                 "purge_gap_rows": int(horizon),
+                "purge_rule": "remove training rows whose future outcome date reaches the test period",
+                "actual_purged_rows": int(int(len(dataset) * FINAL_TRAIN_RATIO) - len(train)),
                 "train_start": str(train["date"].min().date()),
                 "train_end": str(train["date"].max().date()),
                 "test_start": str(test["date"].min().date()),
@@ -353,6 +456,7 @@ def main() -> None:
                 backtests[best_name]["aggregate_metrics"],
                 "holdout",
                 evaluations[best_name],
+                reliability["status"],
             )
 
     (MODEL_DIR / "multicurrency_model_metadata.json").write_text(

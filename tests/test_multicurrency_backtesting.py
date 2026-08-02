@@ -5,8 +5,14 @@ from sklearn.dummy import DummyClassifier
 
 from scripts.train_multicurrency_models import (
     FEATURE_COLUMNS,
+    assess_reliability,
     purged_chronological_split,
     rolling_origin_backtest,
+)
+from scripts.train_flexible_horizon_models import (
+    apply_training_thresholds,
+    build_horizon_dataset,
+    chronological_window,
 )
 
 
@@ -26,6 +32,29 @@ def synthetic_dataset(rows=100):
 
 
 class MultiCurrencyBacktestingTests(unittest.TestCase):
+    def test_flexible_dataset_covers_one_to_one_hundred_days(self):
+        source = synthetic_dataset(rows=240).drop(columns=["risk_label_7d"])
+        source["mid_rate"] = 1000 + source.index.astype(float)
+
+        dataset = build_horizon_dataset(source)
+
+        self.assertEqual(dataset["horizon_days"].min(), 1)
+        self.assertEqual(dataset["horizon_days"].max(), 100)
+        self.assertTrue((dataset["future_date"] > dataset["date"]).all())
+
+    def test_flexible_split_purges_overlapping_outcomes_and_uses_training_thresholds(self):
+        source = synthetic_dataset(rows=240).drop(columns=["risk_label_7d"])
+        source["mid_rate"] = 1000 + source.index.astype(float)
+        dataset = build_horizon_dataset(source)
+
+        train, test, details = chronological_window(dataset, 0.8, 1.0)
+        train, test, thresholds = apply_training_thresholds(train, test)
+
+        self.assertLess(train["future_date"].max(), test["date"].min())
+        self.assertGreater(details["purged_training_rows"], 0)
+        self.assertEqual(len(thresholds), 100)
+        self.assertEqual(set(train["risk_label"]), {"Low", "Medium", "High"})
+
     def test_final_split_purges_horizon_rows_before_holdout(self):
         dataset = synthetic_dataset()
 
@@ -77,6 +106,15 @@ class MultiCurrencyBacktestingTests(unittest.TestCase):
                 horizon=7,
                 windows=((0.80, 0.90),),
             )
+
+    def test_reliability_gate_rejects_near_chance_model(self):
+        model = {"aggregate_metrics": {"balanced_accuracy": 0.40, "f1_macro": 0.35}}
+        baseline = {"aggregate_metrics": {"balanced_accuracy": 0.3333, "f1_macro": 0.20}}
+
+        result = assess_reliability(model, baseline)
+
+        self.assertEqual(result["status"], "experimental_not_trustworthy")
+        self.assertFalse(result["checks"]["balanced_accuracy_at_least_0_55"])
 
 
 if __name__ == "__main__":

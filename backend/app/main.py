@@ -6,7 +6,7 @@ import os
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import date, datetime, timedelta, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import List, Optional
@@ -62,6 +62,14 @@ FEATURE_COLUMNS = [
     "ma_gap", "volatility_7d", "volatility_14d", "volatility_30d", "momentum_7d",
     "momentum_14d", "spread", "spread_pct", "depreciation_days_7d", "depreciation_days_14d",
 ]
+MODEL_FEATURE_COLUMNS = [*FEATURE_COLUMNS, "horizon_days"]
+MIN_PAYMENT_DAYS = 1
+MAX_PAYMENT_DAYS = 100
+RWANDA_TIMEZONE = timezone(timedelta(hours=2))
+
+
+def rwanda_today() -> date:
+    return datetime.now(RWANDA_TIMEZONE).date()
 
 app = FastAPI(
     title="FXGuard AI API",
@@ -87,7 +95,7 @@ if FRONTEND_DIR.exists():
 class RiskRequest(BaseModel):
     currency: str = Field(default="USD", description="Invoice currency: USD, EUR, or KES.")
     amount: float = Field(default=10000, gt=0, description="Supplier invoice amount in the selected currency.")
-    horizon: int = Field(default=7, description="Prediction horizon in days: 7 or 14.")
+    payment_date: date = Field(description="Planned invoice payment date, 1 to 100 days from today.")
 
 
 class FeedbackRequest(BaseModel):
@@ -184,18 +192,16 @@ def append_feedback_to_google_sheet(feedback_data: dict) -> dict:
     }
 
 
-def load_model(currency: str, horizon: int):
+def load_model(currency: str):
     import joblib
 
     try:
         currency = validate_currency(currency)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    if horizon not in (7, 14):
-        raise HTTPException(status_code=400, detail="Horizon must be 7 or 14 days.")
-    key = f"model_{currency}_{horizon}d"
+    key = f"model_{currency}_flexible"
     if key not in _cache:
-        path = MODEL_DIR / f"risk_model_{currency}_{horizon}d.pkl"
+        path = MODEL_DIR / f"risk_model_{currency}_flexible.pkl"
         if not path.exists():
             raise HTTPException(status_code=500, detail=f"Model not found: {path}")
         _cache[key] = joblib.load(path)
@@ -258,23 +264,23 @@ def risk_considerations(risk: str, currency: str = "USD") -> List[str]:
 
 
 def risk_pressure_rate(risk: str, horizon: int) -> float:
-    # Conservative demo assumptions for cost-pressure scenarios.
-    if risk == "High":
-        return 0.012 if horizon == 7 else 0.02
-    if risk == "Medium":
-        return 0.006 if horizon == 7 else 0.012
-    return 0.0025 if horizon == 7 else 0.005
+    """Scale the illustrative planning scenario with the payment period."""
+    horizon_scale = (horizon / 7) ** 0.5
+    base_rate = {"Low": 0.0025, "Medium": 0.006, "High": 0.012}[risk]
+    return min(base_rate * horizon_scale, {"Low": 0.02, "Medium": 0.05, "High": 0.10}[risk])
 
 
 def model_predict(currency: str, horizon: int):
     import pandas as pd
 
-    model = load_model(currency, horizon)
+    model = load_model(currency)
     try:
         row = latest_currency_feature_row(currency, FEATURE_COLUMNS)
     except (RuntimeError, FileNotFoundError, ValueError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
-    X = pd.DataFrame([row[FEATURE_COLUMNS].astype(float).to_dict()])
+    model_values = row[FEATURE_COLUMNS].astype(float).to_dict()
+    model_values["horizon_days"] = float(horizon)
+    X = pd.DataFrame([model_values], columns=MODEL_FEATURE_COLUMNS)
     pred = str(model.predict(X)[0])
 
     confidence = None
@@ -420,7 +426,7 @@ def history(days: int = 90, currency: str = "USD"):
 
 @app.get("/api/model-metadata")
 def model_metadata():
-    return load_json(MODEL_DIR / "multicurrency_model_metadata.json")
+    return load_json(MODEL_DIR / "flexible_horizon_model_metadata.json")
 
 
 @app.post("/api/predict-risk")
@@ -429,24 +435,36 @@ def predict_risk(req: RiskRequest):
         currency = validate_currency(req.currency)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    if req.horizon not in (7, 14):
-        raise HTTPException(status_code=400, detail="Horizon must be 7 or 14 days.")
+    today = rwanda_today()
+    horizon_days = (req.payment_date - today).days
+    if not MIN_PAYMENT_DAYS <= horizon_days <= MAX_PAYMENT_DAYS:
+        raise HTTPException(
+            status_code=400,
+            detail="Payment date must be between 1 and 100 days from today.",
+        )
 
-    risk, confidence, predicted_probability, top_probability_label, probabilities, row = model_predict(currency, req.horizon)
+    risk, confidence, predicted_probability, top_probability_label, probabilities, row = model_predict(currency, horizon_days)
     current_rate = float(row["mid_rate"])
     current_cost = req.amount * current_rate
-    pressure_rate = risk_pressure_rate(risk, req.horizon)
+    pressure_rate = risk_pressure_rate(risk, horizon_days)
     possible_extra_cost = current_cost * pressure_rate
     planning_buffer = current_cost * max(pressure_rate, 0.0025)
     considerations = risk_considerations(risk, currency)
 
-    metadata = load_json(MODEL_DIR / "multicurrency_model_metadata.json")
+    metadata = load_json(MODEL_DIR / "flexible_horizon_model_metadata.json")
+    model_evidence = metadata.get("models", {}).get(currency, {})
+    reliability = model_evidence.get(
+        "reliability",
+        {"status": "not_evaluated", "gate_is_project_defined": True},
+    )
     return {
         "currency": currency,
         "currency_name": CURRENCY_INFO[currency]["name"],
         "currency_symbol": CURRENCY_INFO[currency]["symbol"],
         "pair": f"{currency}/RWF",
-        "horizon_days": req.horizon,
+        "payment_date": str(req.payment_date),
+        "horizon_days": horizon_days,
+        "days_to_payment": horizon_days,
         "amount": req.amount,
         "amount_currency": req.amount,
         "amount_usd": req.amount if currency == "USD" else None,
@@ -457,10 +475,19 @@ def predict_risk(req: RiskRequest):
         "risk_level": risk,
         "confidence": confidence,
         "confidence_score": confidence,
+        "model_score": confidence,
         "predicted_probability": predicted_probability,
         "top_probability_label": top_probability_label,
         "class_probabilities": probabilities,
         "probability_distribution": probabilities,
+        "score_is_approximate": True,
+        "score_calibration": "uncalibrated",
+        "model_reliability": reliability,
+        "operational_use": (
+            "experimental_decision_support"
+            if reliability.get("status") != "meets_provisional_gate"
+            else "passed_provisional_research_gate"
+        ),
         "assumed_pressure_rate": pressure_rate,
         "possible_extra_cost_rwf": round(possible_extra_cost, 2),
         "planning_buffer_estimate_rwf": round(planning_buffer, 2),
@@ -479,7 +506,7 @@ def predict_risk(req: RiskRequest):
         "considerations": considerations,
         "rate_source": str(row.get("source", "BNR reference-rate dataset")),
         "rate_type": str(row.get("rate_type", "BNR reference rate")),
-        "disclaimer": "This payment check is decision support only. It shows estimates based on recent and past rates; it does not recommend when or how to pay and cannot promise a future rate.",
+        "disclaimer": "This is an early estimate for planning. It cannot promise the future exchange rate or remove currency risk. Do not make a payment decision from this result alone.",
     }
 
 
@@ -526,10 +553,11 @@ def build_excel_report(result: dict) -> BytesIO:
         ("BNR rate date", result["analysis_date"]),
         ("Currency", result["pair"]),
         (f"Payment amount ({result['currency']})", amount),
-        ("Check period (days)", result["horizon_days"]),
+        ("Payment date", result["payment_date"]),
+        ("Days to payment", result["horizon_days"]),
         (f"Current rate (RWF per {result['currency']})", result["current_rate"]),
         ("Risk level", result["risk_level"]),
-        ("Likelihood probability", result.get("confidence_score", result.get("confidence"))),
+        ("How strongly FXGuard chose this level", result.get("confidence_score", result.get("confidence"))),
         ("Cost at current rate (RWF)", result["current_cost_rwf"]),
         ("Possible extra cost (RWF)", result["possible_extra_cost_rwf"]),
         ("Planning buffer estimate (RWF)", result["planning_buffer_estimate_rwf"]),
@@ -540,17 +568,17 @@ def build_excel_report(result: dict) -> BytesIO:
     for row_number in range(7, sheet.max_row + 1):
         label = sheet.cell(row_number, 1).value
         value_cell = sheet.cell(row_number, 2)
-        if label == "Likelihood probability":
-            value_cell.number_format = "0.0%"
+        if label == "How strongly FXGuard chose this level":
+            value_cell.number_format = '"≈ "0.0%'
         elif label and ("amount" in label.lower() or "rate" in label.lower() or "cost" in label.lower() or "buffer" in label.lower()):
             value_cell.number_format = "#,##0.00"
 
-    add_section("HOW LIKELY EACH RISK LEVEL IS", ("Risk level", "Chance"))
+    add_section("HOW FXGUARD COMPARED THE RISK LEVELS", ("Risk level", "Approx. result"))
     for risk_class, probability in sorted(
         result.get("class_probabilities", {}).items(), key=lambda item: item[1], reverse=True
     ):
         sheet.append([risk_class, probability])
-        sheet.cell(sheet.max_row, 2).number_format = "0.0%"
+        sheet.cell(sheet.max_row, 2).number_format = '"≈ "0.0%'
 
     add_section("PAYMENT TIPS", ("#", "What you may consider"))
     for index, consideration in enumerate(result.get("considerations", []), start=1):

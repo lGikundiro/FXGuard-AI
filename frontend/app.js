@@ -10,7 +10,6 @@ const configuredApi = String(window.FXGUARD_API_URL ?? '').trim();
 const API = configuredApi || window.location.origin;
 
 /* --- State ------------------------------------------------ */
-let selectedMainHorizon = 7;
 let selectedCurrency    = 'USD';
 let latestResult        = null;
 let latestRate          = null;   // kept for converter
@@ -245,16 +244,37 @@ feedbackForm?.addEventListener('submit', async event => {
 });
 
 /* ==========================================================
-   HORIZON TOGGLES
+   PAYMENT DATE
    ========================================================== */
-document.querySelectorAll('[data-horizon-main]').forEach(btn =>
-  btn.addEventListener('click', () => {
-    selectedMainHorizon = Number(btn.dataset.horizonMain);
-    document.querySelectorAll('[data-horizon-main]').forEach(b =>
-      b.classList.toggle('active', b === btn)
-    );
-  })
-);
+function localISODate(value) {
+  const date = new Date(value);
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
+function configurePaymentDate() {
+  const input = document.getElementById('paymentDate');
+  if (!input) return;
+  const minimum = new Date();
+  minimum.setHours(12, 0, 0, 0);
+  minimum.setDate(minimum.getDate() + 1);
+  const maximum = new Date();
+  maximum.setHours(12, 0, 0, 0);
+  maximum.setDate(maximum.getDate() + 100);
+  input.min = localISODate(minimum);
+  input.max = localISODate(maximum);
+  if (!input.value || input.value < input.min || input.value > input.max) {
+    const suggested = new Date();
+    suggested.setHours(12, 0, 0, 0);
+    suggested.setDate(suggested.getDate() + 7);
+    input.value = localISODate(suggested);
+  }
+}
+
+configurePaymentDate();
 
 /* ==========================================================
    FORMATTERS
@@ -276,7 +296,7 @@ function fmtPct(num) {
   return `${num > 0 ? '+' : ''}${num.toFixed(2)}%`;
 }
 function pct(val) {
-  return `${Math.round((val ?? 0) * 100)}%`;
+  return `≈ ${Math.round((val ?? 0) * 100)}%`;
 }
 
 /* ==========================================================
@@ -620,7 +640,7 @@ function checkSignature(check) {
   return [
     String(check.currency ?? 'USD').toUpperCase(),
     Number(check.amount ?? 0),
-    Number(check.horizon ?? 0),
+    String(check.paymentDate ?? check.full?.payment_date ?? check.horizon ?? ''),
   ].join('|');
 }
 
@@ -650,6 +670,7 @@ function saveCheck(r) {
     amount:  r.amount ?? r.amount_currency ?? r.amount_usd,
     currency: r.currency ?? 'USD',
     horizon: r.horizon_days,
+    paymentDate: r.payment_date,
     risk:    r.risk_level,
     cost:    r.current_cost_rwf,
     extra:   r.possible_extra_cost_rwf,
@@ -721,7 +742,7 @@ function renderRecentChecks() {
       aria-label="Open ${c.risk} risk payment check from ${formatCheckTime(c)}">
       <td><time class="check-date">${formatCheckTime(c)}</time></td>
       <td class="mono money-col">${formatInvoiceAmount(c)}</td>
-      <td>${c.horizon} days</td>
+      <td>${c.paymentDate ?? c.full?.payment_date ?? `${c.horizon} days`}</td>
       <td><span class="risk-pill ${c.risk}">${c.risk}</span></td>
       <td class="mono money-col">RWF ${fmt(c.cost)}</td>
       <td class="money-col extra-cost-col">
@@ -788,9 +809,15 @@ function setLoading(btnId, on) {
   btn.disabled = on;
 }
 
-async function runAssessment(amount, horizon, triggeredBy, currency = selectedCurrency) {
+async function runAssessment(amount, paymentDate, triggeredBy, currency = selectedCurrency) {
   if (!amount || amount <= 0) {
     toast('Enter an invoice amount above zero.', 'error');
+    return;
+  }
+  const dateInput = document.getElementById('paymentDate');
+  if (!paymentDate || (dateInput && !dateInput.checkValidity())) {
+    dateInput?.reportValidity();
+    toast('Choose a payment date from tomorrow up to 100 days from today.', 'error');
     return;
   }
   setLoading(triggeredBy, true);
@@ -798,7 +825,7 @@ async function runAssessment(amount, horizon, triggeredBy, currency = selectedCu
   const body = JSON.stringify({
     currency,
     amount:         Number(amount),
-    horizon:        Number(horizon),
+    payment_date:   paymentDate,
   });
 
   let res;
@@ -831,7 +858,7 @@ async function runAssessment(amount, horizon, triggeredBy, currency = selectedCu
 document.getElementById('analyzeBtn')?.addEventListener('click', () =>
   runAssessment(
     document.getElementById('amount')?.value,
-    selectedMainHorizon,
+    document.getElementById('paymentDate')?.value,
     'analyzeBtn',
     document.getElementById('currency')?.value ?? selectedCurrency
   )
@@ -924,17 +951,17 @@ function renderResult(r) {
   if (resultHero) resultHero.className = `result-hero level-${r.risk_level}`;
 
   setText('riskMeaning',     RISK_MEANINGS[r.risk_level] ?? 'Recent rate information is shown below.');
-  setText('riskHorizon',     `In the next ${r.horizon_days ?? selectedMainHorizon} days`);
+  setText('riskHorizon',     `For payment on ${r.payment_date} (${r.horizon_days} days ahead)`);
   setText('currentCost',     `RWF ${fmt(r.current_cost_rwf)}`);
   setText('currentRateText', `At today's rate of ${fmtRate(r.current_rate, r.currency)} RWF per ${r.currency}`);
   setText('extraCost',       `RWF ${fmt(r.possible_extra_cost_rwf)}`);
 
-  const confidence = Number(r.confidence_score ?? r.confidence);
+  const confidence = Number(r.model_score ?? r.confidence_score ?? r.confidence);
   const hasConfidence = Number.isFinite(confidence);
   const confidencePercent = hasConfidence
     ? Math.max(0, Math.min(100, Math.round(confidence * 100)))
     : 0;
-  setText('modelConfidence', hasConfidence ? `${confidencePercent}%` : 'Unavailable');
+  setText('modelConfidence', hasConfidence ? `≈ ${confidencePercent}%` : 'Unavailable');
   const confidenceBar = document.getElementById('modelConfidenceBar');
   if (confidenceBar) confidenceBar.style.width = `${confidencePercent}%`;
   const confidenceTrack = document.getElementById('modelConfidenceTrack');
@@ -942,9 +969,16 @@ function renderResult(r) {
     confidenceTrack.setAttribute('aria-valuenow', String(confidencePercent));
     confidenceTrack.setAttribute(
       'aria-valuetext',
-      hasConfidence ? `${confidencePercent}% likelihood probability` : 'Likelihood probability unavailable'
+      hasConfidence ? `FXGuard leaned approximately ${confidencePercent}% toward this risk level` : 'Result strength unavailable'
     );
   }
+  const reliabilityStatus = r.model_reliability?.status;
+  setText(
+    'modelReliabilityNote',
+    reliabilityStatus === 'meets_provisional_gate'
+      ? 'This result performed better in our tests, but it cannot predict the future. Use it as one part of your planning.'
+      : 'Early estimate: FXGuard is still being tested. Do not make a payment decision from this result alone.'
+  );
 
   /* Key drivers */
   const driversEl = document.getElementById('drivers');
@@ -1021,7 +1055,7 @@ document.getElementById('downloadExcelBtn').addEventListener('click', async () =
       body: JSON.stringify({
         currency: r.currency,
         amount: r.amount ?? r.amount_currency ?? r.amount_usd,
-        horizon: r.horizon_days,
+        payment_date: r.payment_date,
       }),
     });
     if (!response.ok) throw new Error(await response.text());
@@ -1109,14 +1143,14 @@ document.getElementById('downloadHtmlBtn').addEventListener('click', () => {
 <div class="page">
   <div class="header">
     <h1>FXGuard AI — Payment Check Report</h1>
-    <p>Created ${date} &nbsp;·&nbsp; ${r.currency} / RWF &nbsp;·&nbsp; ${r.horizon_days}-day check</p>
+    <p>Created ${date} &nbsp;·&nbsp; ${r.currency} / RWF &nbsp;·&nbsp; payment ${r.payment_date}</p>
   </div>
   <div class="body">
     <div class="cards">
       <div class="card risk-card">
         <div class="card-label">Risk level</div>
         <div class="card-value risk-value">${r.risk_level}</div>
-        <div class="card-sub">${r.horizon_days}-day check</div>
+        <div class="card-sub">Payment ${r.payment_date} (${r.horizon_days} days ahead)</div>
       </div>
       <div class="card">
         <div class="card-label">Cost at current rate</div>
@@ -1139,8 +1173,8 @@ document.getElementById('downloadHtmlBtn').addEventListener('click', () => {
             <td style="padding:8px 12px;border-bottom:1px solid #e3e7ed;font-family:monospace">${fmtRate(r.current_rate, r.currency)} RWF / ${r.currency}</td></tr>
         <tr><td style="padding:8px 12px;border-bottom:1px solid #e3e7ed;color:#718096">Planning buffer estimate</td>
             <td style="padding:8px 12px;border-bottom:1px solid #e3e7ed;font-family:monospace;color:#b37400">RWF ${fmt(r.planning_buffer_estimate_rwf ?? r.suggested_margin_buffer_rwf)}</td></tr>
-        <tr><td style="padding:8px 12px;color:#718096">Likelihood probability</td>
-            <td style="padding:8px 12px;font-family:monospace">${pct(r.confidence_score ?? r.confidence ?? 0)}</td></tr>
+        <tr><td style="padding:8px 12px;color:#718096">How strongly FXGuard chose this level</td>
+            <td style="padding:8px 12px;font-family:monospace">≈ ${pct(r.confidence_score ?? r.confidence ?? 0)}</td></tr>
       </table>
     </div>
 
@@ -1150,7 +1184,7 @@ document.getElementById('downloadHtmlBtn').addEventListener('click', () => {
     </div>
 
     <div class="section">
-      <div class="section-title">How likely each risk level is</div>
+      <div class="section-title">How FXGuard compared the risk levels</div>
       ${probsHtml}
     </div>
 

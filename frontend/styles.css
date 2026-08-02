@@ -775,7 +775,7 @@ input:focus, select:focus {
 }
 input::placeholder { color: var(--white-30); }
 
-/* Segment control — horizon picker */
+/* Segment control — retained for reusable compact choices */
 .seg-control {
   display: flex;
   background: var(--black-800);

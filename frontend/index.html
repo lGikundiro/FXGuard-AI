@@ -26,7 +26,7 @@
   </style>
   <script>window.FXGUARD_API_URL = "";</script>
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg?v=1" />
-  <link rel="stylesheet" href="/static/styles.css?v=56">
+  <link rel="stylesheet" href="/static/styles.css?v=57">
 </head>
 <body>
 
@@ -245,7 +245,7 @@
                 <tr>
                   <th>Checked</th>
                   <th class="money-col">Invoice amount</th>
-                  <th>Period</th>
+                  <th>Payment date</th>
                   <th>Risk</th>
                   <th class="money-col">Current cost</th>
                   <th class="money-col extra-cost-col">Estimated extra cost</th>
@@ -285,11 +285,9 @@
               </div>
             </div>
             <div class="field">
-              <label>Check period</label>
-              <div class="seg-control" role="group" aria-label="Payment check period">
-                <button class="seg-btn active" data-horizon-main="7">7 days</button>
-                <button class="seg-btn" data-horizon-main="14">14 days</button>
-              </div>
+              <label for="paymentDate">When will the invoice be paid?</label>
+              <input id="paymentDate" type="date" required aria-describedby="paymentDateHelp" />
+              <p class="field-note" id="paymentDateHelp">Choose a date from tomorrow up to 100 days from today.</p>
             </div>
             <button class="btn-primary" id="analyzeBtn">
               <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 10.5l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -360,14 +358,14 @@
             <p class="result-risk-meaning" id="riskMeaning">—</p>
             <div class="result-confidence">
               <div class="result-confidence-head">
-                <span>Likelihood probability</span>
+                <span>How strongly FXGuard chose this level</span>
                 <strong id="modelConfidence">—</strong>
               </div>
               <div class="result-confidence-track" id="modelConfidenceTrack"
-                role="progressbar" aria-label="Likelihood probability" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                role="progressbar" aria-label="How strongly FXGuard chose this risk level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
                 <span id="modelConfidenceBar"></span>
               </div>
-              <p>How likely this risk level appears from recent rate patterns. The actual result may be different.</p>
+              <p id="modelReliabilityNote">This shows which risk level FXGuard leaned toward. It is an estimate, not a promise.</p>
             </div>
           </div>
 
@@ -573,7 +571,7 @@
         <h3>Information we collect</h3>
         <ul>
           <li>Your verified phone number or email address for signing in and account recovery.</li>
-          <li>The payment checks you choose to save, including currency, invoice amount, check period, risk result, likelihood probability, costs, BNR rate date and model version.</li>
+          <li>The payment checks you choose to save, including currency, invoice amount, payment date, risk result, approximate model score, costs, BNR rate date and model version.</li>
           <li>Your feedback ratings and comments, plus your name, import category or phone number only when you choose to provide them.</li>
           <li>Limited security records needed to protect accounts and investigate misuse.</li>
         </ul>
@@ -833,7 +831,7 @@
     </div>
   </div>
 
-  <script src="/static/app.js?v=43"></script>
+  <script src="/static/app.js?v=44"></script>
   <script src="/static/accounts.js?v=6"></script>
 </body>
 </html>

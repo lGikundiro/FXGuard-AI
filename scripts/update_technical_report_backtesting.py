@@ -53,20 +53,181 @@ def update_report() -> None:
 
     document = Document(REPORT_PATH)
     if any(p.text.strip() == "Automated Software Testing" for p in document.paragraphs):
-        for paragraph in document.paragraphs:
-            if paragraph.text.startswith("All 23 automated software tests passed."):
-                replace_paragraph_text(
-                    paragraph,
-                    paragraph.text.replace(
-                        "All 23 automated software tests passed.",
-                        "All 26 automated software tests passed.",
-                        1,
-                    ),
-                )
+        current_updates = {
+            5: (
+                "Rwanda-based importers that earn RWF and owe foreign-currency supplier "
+                "payments face uncertain RWF costs when rates move before settlement. "
+                "FXGuard AI investigates whether short-term risk classification can add "
+                "payment-planning support. It does not stop depreciation, hedge exposure, "
+                "or resolve the underlying financial risk."
+            ),
+            6: (
+                "FXGuard AI is an experimental web-based decision-support prototype. It "
+                "uses official USD/RWF, EUR/RWF, and KES/RWF histories and the user's "
+                "invoice payment date to classify 1-to-100-day depreciation pressure as "
+                "Low, Medium, or High."
+            ),
+            9: (
+                "The model dataset uses actual BNR posting rows only. A forward-filled "
+                "daily calendar remains available for charts, but weekends and other "
+                "non-posting dates are excluded from model training."
+            ),
+            12: (
+                "Every integer horizon from 1 to 100 days uses the first official BNR "
+                "posting on or after its calendar target date. Within evaluation, Low, "
+                "Medium, and High thresholds are derived separately for every horizon "
+                "from the earlier training window only."
+            ),
+            21: (
+                "Logistic Regression, Random Forest, and XGBoost were compared "
+                "independently for USD, EUR, and KES across the full 1-to-100-day "
+                "horizon surface. Model selection was based on time-aware historical "
+                "backtesting rather than the final holdout."
+            ),
+            24: (
+                "Three expanding rolling-origin folds were used for every currency and "
+                "the full 1-to-100-day horizon surface. Training rows whose future outcome "
+                "date reached the following test period were purged, creating up to a "
+                "100-day boundary gap."
+            ),
+            25: (
+                "*The final USD flexible-horizon holdout contains only Low-risk labels. "
+                "Its 100% accuracy is not evidence that the model distinguishes all three classes."
+            ),
+            27: (
+                "All 42 automated software tests passed. They cover the application, data "
+                "validation, 1-to-100-day feature construction, payment-date limits, model "
+                "outputs, reliability gate, forward-only evaluation, API, frontend, and "
+                "account security foundations."
+            ),
+            29: (
+                "None of the three flexible classifiers passed the declared reliability gate. The "
+                "software is a functioning experimental prototype, but the current "
+                "evidence does not support operational financial reliance."
+            ),
+            32: (
+                "Logistic Regression was selected for USD, XGBoost for EUR, and Random "
+                "Forest for KES. Selection used mean rolling balanced accuracy, then "
+                "Macro F1 and accuracy."
+            ),
+            33: (
+                "Pooled rolling balanced accuracy was 0.4472 for USD, 0.2987 for EUR, and "
+                "0.4016 for KES. Macro F1 was also below the declared gate for all three."
+            ),
+            35: (
+                "More complex algorithms did not reliably overcome the limited predictive "
+                "signal in rate-history features. Algorithm choice alone is therefore not "
+                "the main solution to the reliability problem."
+            ),
+            36: (
+                "The pre-declared project gate requires mean balanced accuracy of at least "
+                "0.55, mean Macro F1 of at least 0.45, and at least 0.05 improvement over "
+                "the baseline. All current models remain experimental."
+            ),
+            37: "Uncalibrated Model Score",
+            38: (
+                "The classifier returns relative scores for Low, Medium, and High. The "
+                "largest score accompanies the selected class, but it has not been shown "
+                "to equal the real-world frequency of that outcome."
+            ),
+            39: (
+                "The interface therefore labels this value an uncalibrated model score, "
+                "not a likelihood probability or confidence guarantee."
+            ),
+            43: (
+                "The user selects the expected invoice payment date. The browser accepts "
+                "tomorrow through 100 days ahead, and the API independently enforces the "
+                "same limit using the current Rwanda date."
+            ),
+            45: (
+                "The backend calculates the number of calendar days until payment, loads "
+                "the selected currency's flexible model, and supplies horizon_days with "
+                "the latest official-posting features."
+            ),
+            46: (
+                "The model returns a risk class and uncalibrated class scores. The "
+                "interface prefixes the leading score with an approximation sign, such "
+                "as ≈ 72%, and shows that the model is experimental."
+            ),
+        }
+        for index, text in current_updates.items():
+            replace_paragraph_text(document.paragraphs[index], text)
+
+        current_results = [
+            ("Currency", "Period", "Selected model", "Backtest accuracy", "Balanced accuracy", "Macro F1", "Holdout accuracy"),
+            ("USD/RWF", "1–100 days", "Logistic Regression", "0.6386", "0.4472", "0.2801", "1.0000*"),
+            ("EUR/RWF", "1–100 days", "XGBoost", "0.3084", "0.2987", "0.1680", "0.8164"),
+            ("KES/RWF", "1–100 days", "Random Forest", "0.4982", "0.4016", "0.2470", "0.2481"),
+        ]
+        for row, values in zip(document.tables[6].rows, current_results):
+            set_table_row(row, values)
+        for row_index in range(len(document.tables[6].rows) - 1, len(current_results) - 1, -1):
+            row = document.tables[6].rows[row_index]
+            row._element.getparent().remove(row._element)
+
+        replace_cell_text(
+            document.tables[2].rows[6].cells[1],
+            "Forward-filled dates are retained for charts only; model training uses actual BNR postings.",
+        )
+        replace_cell_text(
+            document.tables[2].rows[5].cells[1],
+            "Official-posting observations, engineered rate-history features, horizon_days, and horizon-specific 1-to-100-day labels.",
+        )
+        replace_cell_text(
+            document.tables[1].rows[5].cells[1],
+            "Experimental risk class, uncalibrated model scores, RWF cost scenario, drivers, and planning considerations.",
+        )
+        replace_cell_text(
+            document.tables[1].rows[4].cells[1],
+            "USD, EUR, and KES against RWF; user-selected payment dates 1–100 days ahead; FastAPI backend; web frontend.",
+        )
+        replace_cell_text(
+            document.tables[5].rows[6].cells[1],
+            "Receives currency, amount, and payment_date; validates 1–100 days; returns experimental risk classification, approximate uncalibrated scores, reliability status, cost estimates, and planning considerations.",
+        )
+        replace_cell_text(
+            document.tables[5].rows[3].cells[1],
+            "Loads one horizon-aware model for the selected currency and predicts from the latest features plus horizon_days.",
+        )
+        score_rows = {
+            0: ("Item", "Description"),
+            1: ("Model-score output", "Example display: ≈ 92% for the selected class."),
+            2: ("Selected class", "The class with the largest model score."),
+            3: ("Top model score", "An uncalibrated relative score, not a verified outcome probability."),
+            4: ("Why it matters", "It exposes how strongly the model favors one class while retaining an explicit reliability warning."),
+        }
+        for row_index, values in score_rows.items():
+            set_table_row(document.tables[7].rows[row_index], values)
+        assumption_updates = {
+            3: ("Preprocessing decision", "Model training excludes forward-filled non-posting dates; the daily calendar is display-only."),
+            5: ("Limitation 2", "No current classifier passes the project-defined reliability gate; final USD holdouts also contain only Low risk."),
+            7: ("Future work", "Test publication-lagged macro features, collect new outcomes, calibrate scores, and test importer comprehension directly."),
+        }
+        for row_index, (label, description) in assumption_updates.items():
+            row = document.tables[8].rows[row_index]
+            replace_cell_text(row.cells[0], label)
+            replace_cell_text(row.cells[1], label)
+            replace_cell_text(row.cells[2], description)
+            replace_cell_text(row.cells[3], description)
         replace_cell_text(
             document.tables[4].rows[9].cells[1],
             "Number of recent days when the selected foreign-currency/RWF rate increased",
         )
+        if not any(p.text.strip() == "Defense Panel Response Addendum" for p in document.paragraphs):
+            document.add_heading("Defense Panel Response Addendum", level=1)
+            document.add_paragraph(
+                "The revised problem statement does not claim that importers universally "
+                "cannot interpret exchange-rate data. Available Rwanda-specific literature "
+                "supports foreign-exchange exposure and constrained firm capacity, but not "
+                "that stronger importer-specific interpretation claim. Importer comprehension "
+                "will be tested empirically in future user research."
+            )
+            document.add_paragraph(
+                "Future macro-feature experiments will use inflation, policy, fuel/commodity, "
+                "and trade variables only after their real publication dates. Low-frequency "
+                "values may be carried forward with an age indicator, but never backfilled "
+                "into dates when they were not yet public."
+            )
         for table in document.tables:
             for row in table.rows:
                 for cell in row.cells:
@@ -76,7 +237,7 @@ def update_report() -> None:
         document.save(TEMP_PATH)
         Document(TEMP_PATH)
         TEMP_PATH.replace(REPORT_PATH)
-        print("Technical report already contained the update; normalized table spacing.")
+        print("Technical report updated with panel-response evaluation and normalized spacing.")
         return
     if len(document.tables) < 9 or len(document.paragraphs) < 54:
         raise ValueError("The technical report structure is not the expected version.")

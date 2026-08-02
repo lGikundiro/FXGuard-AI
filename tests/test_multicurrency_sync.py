@@ -4,6 +4,7 @@ import pandas as pd
 
 from scripts.sync_multicurrency_rates import (
     RAW_FILES,
+    add_features,
     build_daily_calendar,
     discover_raw_files,
     load_currency_observations,
@@ -64,6 +65,21 @@ class MultiCurrencySyncTests(unittest.TestCase):
         self.assertEqual(coverage.loc["USD", "max"], pd.Timestamp("2024-01-03"))
         self.assertEqual(coverage.loc["KES", "min"], pd.Timestamp("2024-02-01"))
         self.assertEqual(coverage.loc["KES", "max"], pd.Timestamp("2024-02-03"))
+
+    def test_model_features_use_official_rows_without_weekend_fill(self):
+        observations = pd.DataFrame(
+            [
+                self._observation("2024-01-05", "USD", 1000),  # Friday
+                self._observation("2024-01-08", "USD", 1010),  # Monday
+                self._observation("2024-01-09", "USD", 1020),
+            ]
+        )
+
+        features = add_features(observations)
+
+        self.assertEqual(len(features), 3)
+        self.assertEqual(features.iloc[1]["observation_gap_days"], 3)
+        self.assertAlmostEqual(features.iloc[1]["daily_return"], 0.01)
 
     @staticmethod
     def _observation(observed_date, currency, rate):

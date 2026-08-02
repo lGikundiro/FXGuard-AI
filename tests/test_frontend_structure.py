@@ -108,6 +108,16 @@ class FrontendStructureTests(unittest.TestCase):
         self.assertIn("clarity_rating", self.app_js)
         self.assertIn("usefulness_rating", self.app_js)
 
+    def test_payment_date_replaces_fixed_horizon_buttons(self):
+        self.assertIn("paymentDate", self.ids)
+        self.assertIn('type="date"', self.html)
+        self.assertNotIn("data-horizon-main", self.html)
+        self.assertIn("maximum.setDate(maximum.getDate() + 100)", self.app_js)
+        self.assertIn("payment_date", self.app_js)
+        self.assertIn("≈ ${confidencePercent}%", self.app_js)
+        self.assertIn("How strongly FXGuard chose this level", self.html)
+        self.assertIn("Do not make a payment decision from this result alone", self.app_js)
+
 
 if __name__ == "__main__":
     unittest.main()

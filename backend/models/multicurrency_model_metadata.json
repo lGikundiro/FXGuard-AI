@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-27T11:06:17+00:00",
+  "generated_at": "2026-08-02T10:13:13+00:00",
   "currencies": [
     "USD",
     "EUR",
     "KES"
   ],
   "data": {
-    "generated_at": "2026-07-27",
+    "generated_at": "2026-08-02",
     "source": "Direct National Bank of Rwanda Excel exports",
     "source_url": "https://www.bnr.rw/exchangeRate",
     "delivery_mode": "manual official export",
@@ -39,23 +39,29 @@
     "latest_date": "2026-07-27",
     "label_thresholds": {
       "USD": {
-        "7d_low_max": 0.0013982075755660794,
-        "7d_medium_max": 0.002559074766524683,
-        "14d_low_max": 0.002807729514191948,
-        "14d_medium_max": 0.005178646083642803
+        "7d_low_max": 0.0014178103992052993,
+        "7d_medium_max": 0.0026069081703081753,
+        "14d_low_max": 0.002855460953462119,
+        "14d_medium_max": 0.005196218203646685
       },
       "EUR": {
-        "7d_low_max": 0.001230309710912758,
-        "7d_medium_max": 0.008949082561805403,
+        "7d_low_max": 0.001398472698656894,
+        "7d_medium_max": 0.009165895062901885,
         "14d_low_max": 0.002518121996143874,
-        "14d_medium_max": 0.014494317435696714
+        "14d_medium_max": 0.014490744591385107
       },
       "KES": {
-        "7d_low_max": 0.00023128584852605272,
-        "7d_medium_max": 0.0021248752134505728,
-        "14d_low_max": 0.0005720331895006092,
-        "14d_medium_max": 0.004247455235620564
+        "7d_low_max": 0.0002643486679512197,
+        "7d_medium_max": 0.002129758222632505,
+        "14d_low_max": 0.0006468601476586899,
+        "14d_medium_max": 0.004268833176032327
       }
+    },
+    "model_preprocessing": {
+      "training_rows": "official BNR observations only",
+      "calendar_series_use": "display only; forward-filled dates are excluded from model training",
+      "forecast_horizons": "calendar days; the first official posting on or after the target date supplies the outcome",
+      "rolling_window_unit": "official observations"
     },
     "raw_files": {
       "USD": [
@@ -113,24 +119,148 @@
       "7d": {
         "best_model": "logistic_regression",
         "selection_method": "Highest mean rolling-origin balanced accuracy, then macro F1 and accuracy; final holdout excluded from model selection.",
+        "reliability": {
+          "status": "experimental_not_trustworthy",
+          "gate_is_project_defined": true,
+          "checks": {
+            "balanced_accuracy_at_least_0_55": false,
+            "macro_f1_at_least_0_45": false,
+            "balanced_accuracy_beats_baseline_by_0_05": true
+          },
+          "balanced_accuracy_improvement_over_baseline": 0.1616,
+          "required": {
+            "mean_balanced_accuracy": 0.55,
+            "mean_macro_f1": 0.45,
+            "minimum_balanced_accuracy_improvement_over_baseline": 0.05
+          }
+        },
+        "baseline": {
+          "aggregate_metrics": {
+            "accuracy": 0.6173,
+            "balanced_accuracy": 0.3333,
+            "f1_macro": 0.2468
+          },
+          "folds": [
+            {
+              "fold": 1,
+              "training_rows": 535,
+              "test_rows": 108,
+              "purge_gap_rows": 7,
+              "actual_purged_rows": 5,
+              "train_start": "2022-02-16",
+              "train_end": "2024-04-19",
+              "test_start": "2024-04-29",
+              "test_end": "2024-10-08",
+              "train_class_distribution": {
+                "Low": 268,
+                "Medium": 160,
+                "High": 107
+              },
+              "test_class_distribution": {
+                "Low": 64,
+                "Medium": 36,
+                "High": 8
+              },
+              "metrics": {
+                "accuracy": 0.5926,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.2481
+              },
+              "label_thresholds": {
+                "low_max": 0.0018619914090298,
+                "medium_max": 0.0031246479093203416,
+                "source": "training_window_only"
+              }
+            },
+            {
+              "fold": 2,
+              "training_rows": 643,
+              "test_rows": 108,
+              "purge_gap_rows": 7,
+              "actual_purged_rows": 5,
+              "train_start": "2022-02-16",
+              "train_end": "2024-10-01",
+              "test_start": "2024-10-09",
+              "test_end": "2025-03-14",
+              "train_class_distribution": {
+                "Low": 322,
+                "Medium": 192,
+                "High": 129
+              },
+              "test_class_distribution": {
+                "Low": 39,
+                "Medium": 68,
+                "High": 1
+              },
+              "metrics": {
+                "accuracy": 0.3611,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.1769
+              },
+              "label_thresholds": {
+                "low_max": 0.0017755074445393,
+                "medium_max": 0.00301612406611802,
+                "source": "training_window_only"
+              }
+            },
+            {
+              "fold": 3,
+              "training_rows": 751,
+              "test_rows": 108,
+              "purge_gap_rows": 7,
+              "actual_purged_rows": 5,
+              "train_start": "2022-02-16",
+              "train_end": "2025-03-07",
+              "test_start": "2025-03-17",
+              "test_end": "2025-09-01",
+              "train_class_distribution": {
+                "Low": 376,
+                "Medium": 225,
+                "High": 150
+              },
+              "test_class_distribution": {
+                "Low": 97,
+                "Medium": 5,
+                "High": 6
+              },
+              "metrics": {
+                "accuracy": 0.8981,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.3154
+              },
+              "label_thresholds": {
+                "low_max": 0.0018323516227716,
+                "medium_max": 0.0029036168353395,
+                "source": "training_window_only"
+              }
+            }
+          ]
+        },
+        "holdout_label_thresholds": {
+          "low_max": 0.0017184725303835,
+          "medium_max": 0.0028439404233145,
+          "source": "training_window_only"
+        },
         "model_file": "risk_model_USD_7d.pkl",
-        "training_rows": 1296,
-        "test_rows": 326,
-        "deployment_training_rows": 1629,
+        "training_rows": 859,
+        "test_rows": 217,
+        "deployment_training_rows": 1081,
         "purge_gap_rows": 7,
-        "train_start": "2022-02-03",
-        "train_end": "2025-08-21",
-        "test_start": "2025-08-29",
+        "purge_rule": "remove training rows whose future outcome date reaches the test period",
+        "actual_purged_rows": 5,
+        "train_start": "2022-02-16",
+        "train_end": "2025-08-25",
+        "test_start": "2025-09-02",
         "test_end": "2026-07-20",
-        "deployment_train_start": "2022-02-03",
+        "deployment_train_start": "2022-02-16",
         "deployment_train_end": "2026-07-20",
         "class_distribution": {
-          "Low": 801,
-          "Medium": 496,
-          "High": 332
+          "Low": 526,
+          "Medium": 333,
+          "High": 222
         },
         "test_class_distribution": {
-          "Low": 326,
+          "Low": 217,
           "Medium": 0,
           "High": 0
         },
@@ -160,252 +290,306 @@
           "candidates": {
             "logistic_regression": {
               "aggregate_metrics": {
-                "accuracy": 0.5113,
-                "balanced_accuracy": 0.4682,
-                "f1_macro": 0.3874
+                "accuracy": 0.5463,
+                "balanced_accuracy": 0.4949,
+                "f1_macro": 0.3585
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 807,
-                  "test_rows": 163,
+                  "training_rows": 535,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-19",
-                  "test_start": "2024-04-27",
-                  "test_end": "2024-10-06",
+                  "test_start": "2024-04-29",
+                  "test_end": "2024-10-08",
                   "train_class_distribution": {
-                    "Low": 282,
-                    "Medium": 263,
-                    "High": 262
+                    "Low": 268,
+                    "Medium": 160,
+                    "High": 107
                   },
                   "test_class_distribution": {
-                    "Low": 51,
-                    "Medium": 70,
-                    "High": 42
+                    "Low": 64,
+                    "Medium": 36,
+                    "High": 8
                   },
                   "metrics": {
-                    "accuracy": 0.454,
-                    "balanced_accuracy": 0.4639,
-                    "f1_macro": 0.4444
+                    "accuracy": 0.5926,
+                    "balanced_accuracy": 0.5966,
+                    "f1_macro": 0.428
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0018619914090298,
+                    "medium_max": 0.0031246479093203416,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 970,
-                  "test_rows": 163,
+                  "training_rows": 643,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-29",
-                  "test_start": "2024-10-07",
-                  "test_end": "2025-03-18",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-10-01",
+                  "test_start": "2024-10-09",
+                  "test_end": "2025-03-14",
                   "train_class_distribution": {
-                    "Low": 340,
-                    "Medium": 329,
-                    "High": 301
+                    "Low": 322,
+                    "Medium": 192,
+                    "High": 129
                   },
                   "test_class_distribution": {
-                    "Low": 19,
-                    "Medium": 126,
-                    "High": 18
+                    "Low": 39,
+                    "Medium": 68,
+                    "High": 1
                   },
                   "metrics": {
-                    "accuracy": 0.6319,
-                    "balanced_accuracy": 0.4263,
-                    "f1_macro": 0.4187
+                    "accuracy": 0.537,
+                    "balanced_accuracy": 0.3864,
+                    "f1_macro": 0.3596
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0017755074445393,
+                    "medium_max": 0.00301612406611802,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1133,
-                  "test_rows": 163,
+                  "training_rows": 751,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-03-11",
-                  "test_start": "2025-03-19",
-                  "test_end": "2025-08-28",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-03-07",
+                  "test_start": "2025-03-17",
+                  "test_end": "2025-09-01",
                   "train_class_distribution": {
-                    "Low": 359,
-                    "Medium": 452,
-                    "High": 322
+                    "Low": 376,
+                    "Medium": 225,
+                    "High": 150
                   },
                   "test_class_distribution": {
-                    "Low": 116,
-                    "Medium": 37,
-                    "High": 10
+                    "Low": 97,
+                    "Medium": 5,
+                    "High": 6
                   },
                   "metrics": {
-                    "accuracy": 0.4479,
-                    "balanced_accuracy": 0.5144,
-                    "f1_macro": 0.2991
+                    "accuracy": 0.5093,
+                    "balanced_accuracy": 0.5017,
+                    "f1_macro": 0.2878
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0018323516227716,
+                    "medium_max": 0.0029036168353395,
+                    "source": "training_window_only"
                   }
                 }
               ]
             },
             "random_forest": {
               "aggregate_metrics": {
-                "accuracy": 0.2352,
-                "balanced_accuracy": 0.3341,
-                "f1_macro": 0.1504
+                "accuracy": 0.5093,
+                "balanced_accuracy": 0.3778,
+                "f1_macro": 0.2592
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 807,
-                  "test_rows": 163,
+                  "training_rows": 535,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-19",
-                  "test_start": "2024-04-27",
-                  "test_end": "2024-10-06",
+                  "test_start": "2024-04-29",
+                  "test_end": "2024-10-08",
                   "train_class_distribution": {
-                    "Low": 282,
-                    "Medium": 263,
-                    "High": 262
+                    "Low": 268,
+                    "Medium": 160,
+                    "High": 107
                   },
                   "test_class_distribution": {
-                    "Low": 51,
-                    "Medium": 70,
-                    "High": 42
+                    "Low": 64,
+                    "Medium": 36,
+                    "High": 8
                   },
                   "metrics": {
-                    "accuracy": 0.362,
-                    "balanced_accuracy": 0.3697,
-                    "f1_macro": 0.2381
+                    "accuracy": 0.6389,
+                    "balanced_accuracy": 0.3877,
+                    "f1_macro": 0.3552
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0018619914090298,
+                    "medium_max": 0.0031246479093203416,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 970,
-                  "test_rows": 163,
+                  "training_rows": 643,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-29",
-                  "test_start": "2024-10-07",
-                  "test_end": "2025-03-18",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-10-01",
+                  "test_start": "2024-10-09",
+                  "test_end": "2025-03-14",
                   "train_class_distribution": {
-                    "Low": 340,
-                    "Medium": 329,
-                    "High": 301
+                    "Low": 322,
+                    "Medium": 192,
+                    "High": 129
                   },
                   "test_class_distribution": {
-                    "Low": 19,
-                    "Medium": 126,
-                    "High": 18
+                    "Low": 39,
+                    "Medium": 68,
+                    "High": 1
                   },
                   "metrics": {
-                    "accuracy": 0.1104,
+                    "accuracy": 0.6296,
                     "balanced_accuracy": 0.3333,
-                    "f1_macro": 0.0663
+                    "f1_macro": 0.2576
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0017755074445393,
+                    "medium_max": 0.00301612406611802,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1133,
-                  "test_rows": 163,
+                  "training_rows": 751,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-03-11",
-                  "test_start": "2025-03-19",
-                  "test_end": "2025-08-28",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-03-07",
+                  "test_start": "2025-03-17",
+                  "test_end": "2025-09-01",
                   "train_class_distribution": {
-                    "Low": 359,
-                    "Medium": 452,
-                    "High": 322
+                    "Low": 376,
+                    "Medium": 225,
+                    "High": 150
                   },
                   "test_class_distribution": {
-                    "Low": 116,
-                    "Medium": 37,
-                    "High": 10
+                    "Low": 97,
+                    "Medium": 5,
+                    "High": 6
                   },
                   "metrics": {
-                    "accuracy": 0.2331,
-                    "balanced_accuracy": 0.2994,
-                    "f1_macro": 0.1467
+                    "accuracy": 0.2593,
+                    "balanced_accuracy": 0.4124,
+                    "f1_macro": 0.1648
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0018323516227716,
+                    "medium_max": 0.0029036168353395,
+                    "source": "training_window_only"
                   }
                 }
               ]
             },
             "xgboost": {
               "aggregate_metrics": {
-                "accuracy": 0.3251,
-                "balanced_accuracy": 0.3487,
-                "f1_macro": 0.2212
+                "accuracy": 0.5864,
+                "balanced_accuracy": 0.3315,
+                "f1_macro": 0.261
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 807,
-                  "test_rows": 163,
+                  "training_rows": 535,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-19",
-                  "test_start": "2024-04-27",
-                  "test_end": "2024-10-06",
+                  "test_start": "2024-04-29",
+                  "test_end": "2024-10-08",
                   "train_class_distribution": {
-                    "Low": 282,
-                    "Medium": 263,
-                    "High": 262
+                    "Low": 268,
+                    "Medium": 160,
+                    "High": 107
                   },
                   "test_class_distribution": {
-                    "Low": 51,
-                    "Medium": 70,
-                    "High": 42
+                    "Low": 64,
+                    "Medium": 36,
+                    "High": 8
                   },
                   "metrics": {
-                    "accuracy": 0.319,
-                    "balanced_accuracy": 0.3381,
-                    "f1_macro": 0.169
+                    "accuracy": 0.5926,
+                    "balanced_accuracy": 0.3333,
+                    "f1_macro": 0.2481
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0018619914090298,
+                    "medium_max": 0.0031246479093203416,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 970,
-                  "test_rows": 163,
+                  "training_rows": 643,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-29",
-                  "test_start": "2024-10-07",
-                  "test_end": "2025-03-18",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-10-01",
+                  "test_start": "2024-10-09",
+                  "test_end": "2025-03-14",
                   "train_class_distribution": {
-                    "Low": 340,
-                    "Medium": 329,
-                    "High": 301
+                    "Low": 322,
+                    "Medium": 192,
+                    "High": 129
                   },
                   "test_class_distribution": {
-                    "Low": 19,
-                    "Medium": 126,
-                    "High": 18
+                    "Low": 39,
+                    "Medium": 68,
+                    "High": 1
                   },
                   "metrics": {
-                    "accuracy": 0.4724,
-                    "balanced_accuracy": 0.4389,
-                    "f1_macro": 0.3504
+                    "accuracy": 0.6204,
+                    "balanced_accuracy": 0.3321,
+                    "f1_macro": 0.2702
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0017755074445393,
+                    "medium_max": 0.00301612406611802,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1133,
-                  "test_rows": 163,
+                  "training_rows": 751,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-03-11",
-                  "test_start": "2025-03-19",
-                  "test_end": "2025-08-28",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-03-07",
+                  "test_start": "2025-03-17",
+                  "test_end": "2025-09-01",
                   "train_class_distribution": {
-                    "Low": 359,
-                    "Medium": 452,
-                    "High": 322
+                    "Low": 376,
+                    "Medium": 225,
+                    "High": 150
                   },
                   "test_class_distribution": {
-                    "Low": 116,
-                    "Medium": 37,
-                    "High": 10
+                    "Low": 97,
+                    "Medium": 5,
+                    "High": 6
                   },
                   "metrics": {
-                    "accuracy": 0.184,
-                    "balanced_accuracy": 0.269,
-                    "f1_macro": 0.1441
+                    "accuracy": 0.5463,
+                    "balanced_accuracy": 0.3292,
+                    "f1_macro": 0.2647
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0018323516227716,
+                    "medium_max": 0.0029036168353395,
+                    "source": "training_window_only"
                   }
                 }
               ]
@@ -416,24 +600,148 @@
       "14d": {
         "best_model": "logistic_regression",
         "selection_method": "Highest mean rolling-origin balanced accuracy, then macro F1 and accuracy; final holdout excluded from model selection.",
+        "reliability": {
+          "status": "experimental_not_trustworthy",
+          "gate_is_project_defined": true,
+          "checks": {
+            "balanced_accuracy_at_least_0_55": true,
+            "macro_f1_at_least_0_45": false,
+            "balanced_accuracy_beats_baseline_by_0_05": true
+          },
+          "balanced_accuracy_improvement_over_baseline": 0.1759,
+          "required": {
+            "mean_balanced_accuracy": 0.55,
+            "mean_macro_f1": 0.45,
+            "minimum_balanced_accuracy_improvement_over_baseline": 0.05
+          }
+        },
+        "baseline": {
+          "aggregate_metrics": {
+            "accuracy": 0.6344,
+            "balanced_accuracy": 0.3889,
+            "f1_macro": 0.2804
+          },
+          "folds": [
+            {
+              "fold": 1,
+              "training_rows": 528,
+              "test_rows": 107,
+              "purge_gap_rows": 14,
+              "actual_purged_rows": 10,
+              "train_start": "2022-02-16",
+              "train_end": "2024-04-09",
+              "test_start": "2024-04-25",
+              "test_end": "2024-10-03",
+              "train_class_distribution": {
+                "Low": 264,
+                "Medium": 158,
+                "High": 106
+              },
+              "test_class_distribution": {
+                "Low": 68,
+                "Medium": 34,
+                "High": 5
+              },
+              "metrics": {
+                "accuracy": 0.6355,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.259
+              },
+              "label_thresholds": {
+                "low_max": 0.00395887117168655,
+                "medium_max": 0.0062092170793174,
+                "source": "training_window_only"
+              }
+            },
+            {
+              "fold": 2,
+              "training_rows": 635,
+              "test_rows": 108,
+              "purge_gap_rows": 14,
+              "actual_purged_rows": 10,
+              "train_start": "2022-02-16",
+              "train_end": "2024-09-19",
+              "test_start": "2024-10-04",
+              "test_end": "2025-03-11",
+              "train_class_distribution": {
+                "Low": 318,
+                "Medium": 190,
+                "High": 127
+              },
+              "test_class_distribution": {
+                "Low": 39,
+                "Medium": 69,
+                "High": 0
+              },
+              "metrics": {
+                "accuracy": 0.3611,
+                "balanced_accuracy": 0.5,
+                "f1_macro": 0.2653
+              },
+              "label_thresholds": {
+                "low_max": 0.0037037225295262,
+                "medium_max": 0.00597487548683446,
+                "source": "training_window_only"
+              }
+            },
+            {
+              "fold": 3,
+              "training_rows": 743,
+              "test_rows": 107,
+              "purge_gap_rows": 14,
+              "actual_purged_rows": 10,
+              "train_start": "2022-02-16",
+              "train_end": "2025-02-25",
+              "test_start": "2025-03-12",
+              "test_end": "2025-08-26",
+              "train_class_distribution": {
+                "Low": 372,
+                "Medium": 222,
+                "High": 149
+              },
+              "test_class_distribution": {
+                "Low": 97,
+                "Medium": 5,
+                "High": 5
+              },
+              "metrics": {
+                "accuracy": 0.9065,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.317
+              },
+              "label_thresholds": {
+                "low_max": 0.0038421785572217,
+                "medium_max": 0.00576926426098366,
+                "source": "training_window_only"
+              }
+            }
+          ]
+        },
+        "holdout_label_thresholds": {
+          "low_max": 0.003524271378499,
+          "medium_max": 0.0056270638183166,
+          "source": "training_window_only"
+        },
         "model_file": "risk_model_USD_14d.pkl",
-        "training_rows": 1283,
-        "test_rows": 325,
-        "deployment_training_rows": 1622,
+        "training_rows": 851,
+        "test_rows": 216,
+        "deployment_training_rows": 1076,
         "purge_gap_rows": 14,
-        "train_start": "2022-02-03",
-        "train_end": "2025-08-08",
-        "test_start": "2025-08-23",
+        "purge_rule": "remove training rows whose future outcome date reaches the test period",
+        "actual_purged_rows": 9,
+        "train_start": "2022-02-16",
+        "train_end": "2025-08-12",
+        "test_start": "2025-08-27",
         "test_end": "2026-07-13",
-        "deployment_train_start": "2022-02-03",
+        "deployment_train_start": "2022-02-16",
         "deployment_train_end": "2026-07-13",
         "class_distribution": {
-          "Low": 797,
-          "Medium": 494,
-          "High": 331
+          "Low": 523,
+          "Medium": 332,
+          "High": 221
         },
         "test_class_distribution": {
-          "Low": 325,
+          "Low": 216,
           "Medium": 0,
           "High": 0
         },
@@ -463,252 +771,306 @@
           "candidates": {
             "logistic_regression": {
               "aggregate_metrics": {
-                "accuracy": 0.5638,
-                "balanced_accuracy": 0.4081,
-                "f1_macro": 0.3733
+                "accuracy": 0.5189,
+                "balanced_accuracy": 0.5648,
+                "f1_macro": 0.3504
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 797,
-                  "test_rows": 162,
+                  "training_rows": 528,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-09",
-                  "test_start": "2024-04-24",
-                  "test_end": "2024-10-02",
+                  "test_start": "2024-04-25",
+                  "test_end": "2024-10-03",
                   "train_class_distribution": {
-                    "Low": 267,
-                    "Medium": 257,
-                    "High": 273
+                    "Low": 264,
+                    "Medium": 158,
+                    "High": 106
                   },
                   "test_class_distribution": {
-                    "Low": 51,
-                    "Medium": 73,
-                    "High": 38
+                    "Low": 68,
+                    "Medium": 34,
+                    "High": 5
                   },
                   "metrics": {
-                    "accuracy": 0.5309,
-                    "balanced_accuracy": 0.561,
-                    "f1_macro": 0.516
+                    "accuracy": 0.6075,
+                    "balanced_accuracy": 0.6275,
+                    "f1_macro": 0.3731
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.00395887117168655,
+                    "medium_max": 0.0062092170793174,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 959,
-                  "test_rows": 162,
+                  "training_rows": 635,
+                  "test_rows": 108,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-18",
-                  "test_start": "2024-10-03",
-                  "test_end": "2025-03-13",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-09-19",
+                  "test_start": "2024-10-04",
+                  "test_end": "2025-03-11",
                   "train_class_distribution": {
-                    "Low": 332,
-                    "Medium": 324,
-                    "High": 303
+                    "Low": 318,
+                    "Medium": 190,
+                    "High": 127
                   },
                   "test_class_distribution": {
-                    "Low": 16,
-                    "Medium": 138,
-                    "High": 8
+                    "Low": 39,
+                    "Medium": 69,
+                    "High": 0
                   },
                   "metrics": {
-                    "accuracy": 0.6975,
-                    "balanced_accuracy": 0.3098,
-                    "f1_macro": 0.3091
+                    "accuracy": 0.4444,
+                    "balanced_accuracy": 0.5652,
+                    "f1_macro": 0.398
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0037037225295262,
+                    "medium_max": 0.00597487548683446,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1121,
-                  "test_rows": 162,
+                  "training_rows": 743,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-02-27",
-                  "test_start": "2025-03-14",
-                  "test_end": "2025-08-22",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-02-25",
+                  "test_start": "2025-03-12",
+                  "test_end": "2025-08-26",
                   "train_class_distribution": {
-                    "Low": 348,
-                    "Medium": 454,
-                    "High": 319
+                    "Low": 372,
+                    "Medium": 222,
+                    "High": 149
                   },
                   "test_class_distribution": {
-                    "Low": 124,
-                    "Medium": 26,
-                    "High": 12
+                    "Low": 97,
+                    "Medium": 5,
+                    "High": 5
                   },
                   "metrics": {
-                    "accuracy": 0.463,
-                    "balanced_accuracy": 0.3536,
-                    "f1_macro": 0.2947
+                    "accuracy": 0.5047,
+                    "balanced_accuracy": 0.5017,
+                    "f1_macro": 0.2802
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0038421785572217,
+                    "medium_max": 0.00576926426098366,
+                    "source": "training_window_only"
                   }
                 }
               ]
             },
             "random_forest": {
               "aggregate_metrics": {
-                "accuracy": 0.4342,
-                "balanced_accuracy": 0.3424,
-                "f1_macro": 0.2029
+                "accuracy": 0.4435,
+                "balanced_accuracy": 0.39,
+                "f1_macro": 0.2285
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 797,
-                  "test_rows": 162,
+                  "training_rows": 528,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-09",
-                  "test_start": "2024-04-24",
-                  "test_end": "2024-10-02",
+                  "test_start": "2024-04-25",
+                  "test_end": "2024-10-03",
                   "train_class_distribution": {
-                    "Low": 267,
-                    "Medium": 257,
-                    "High": 273
+                    "Low": 264,
+                    "Medium": 158,
+                    "High": 106
                   },
                   "test_class_distribution": {
-                    "Low": 51,
-                    "Medium": 73,
-                    "High": 38
+                    "Low": 68,
+                    "Medium": 34,
+                    "High": 5
                   },
                   "metrics": {
-                    "accuracy": 0.3148,
+                    "accuracy": 0.6355,
                     "balanced_accuracy": 0.3333,
-                    "f1_macro": 0.1596
+                    "f1_macro": 0.259
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.00395887117168655,
+                    "medium_max": 0.0062092170793174,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 959,
-                  "test_rows": 162,
+                  "training_rows": 635,
+                  "test_rows": 108,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-18",
-                  "test_start": "2024-10-03",
-                  "test_end": "2025-03-13",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-09-19",
+                  "test_start": "2024-10-04",
+                  "test_end": "2025-03-11",
                   "train_class_distribution": {
-                    "Low": 332,
-                    "Medium": 324,
-                    "High": 303
+                    "Low": 318,
+                    "Medium": 190,
+                    "High": 127
                   },
                   "test_class_distribution": {
-                    "Low": 16,
-                    "Medium": 138,
-                    "High": 8
+                    "Low": 39,
+                    "Medium": 69,
+                    "High": 0
                   },
                   "metrics": {
-                    "accuracy": 0.8272,
-                    "balanced_accuracy": 0.3605,
-                    "f1_macro": 0.3569
+                    "accuracy": 0.6389,
+                    "balanced_accuracy": 0.5,
+                    "f1_macro": 0.3898
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0037037225295262,
+                    "medium_max": 0.00597487548683446,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1121,
-                  "test_rows": 162,
+                  "training_rows": 743,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-02-27",
-                  "test_start": "2025-03-14",
-                  "test_end": "2025-08-22",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-02-25",
+                  "test_start": "2025-03-12",
+                  "test_end": "2025-08-26",
                   "train_class_distribution": {
-                    "Low": 348,
-                    "Medium": 454,
-                    "High": 319
+                    "Low": 372,
+                    "Medium": 222,
+                    "High": 149
                   },
                   "test_class_distribution": {
-                    "Low": 124,
-                    "Medium": 26,
-                    "High": 12
+                    "Low": 97,
+                    "Medium": 5,
+                    "High": 5
                   },
                   "metrics": {
-                    "accuracy": 0.1605,
-                    "balanced_accuracy": 0.3333,
-                    "f1_macro": 0.0922
+                    "accuracy": 0.0561,
+                    "balanced_accuracy": 0.3368,
+                    "f1_macro": 0.0368
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0038421785572217,
+                    "medium_max": 0.00576926426098366,
+                    "source": "training_window_only"
                   }
                 }
               ]
             },
             "xgboost": {
               "aggregate_metrics": {
-                "accuracy": 0.4691,
-                "balanced_accuracy": 0.3024,
-                "f1_macro": 0.2281
+                "accuracy": 0.4342,
+                "balanced_accuracy": 0.3219,
+                "f1_macro": 0.2272
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 797,
-                  "test_rows": 162,
+                  "training_rows": 528,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-09",
-                  "test_start": "2024-04-24",
-                  "test_end": "2024-10-02",
+                  "test_start": "2024-04-25",
+                  "test_end": "2024-10-03",
                   "train_class_distribution": {
-                    "Low": 267,
-                    "Medium": 257,
-                    "High": 273
+                    "Low": 264,
+                    "Medium": 158,
+                    "High": 106
                   },
                   "test_class_distribution": {
-                    "Low": 51,
-                    "Medium": 73,
-                    "High": 38
+                    "Low": 68,
+                    "Medium": 34,
+                    "High": 5
                   },
                   "metrics": {
-                    "accuracy": 0.3333,
-                    "balanced_accuracy": 0.3352,
-                    "f1_macro": 0.2198
+                    "accuracy": 0.6075,
+                    "balanced_accuracy": 0.3186,
+                    "f1_macro": 0.2519
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.00395887117168655,
+                    "medium_max": 0.0062092170793174,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 959,
-                  "test_rows": 162,
+                  "training_rows": 635,
+                  "test_rows": 108,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-18",
-                  "test_start": "2024-10-03",
-                  "test_end": "2025-03-13",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-09-19",
+                  "test_start": "2024-10-04",
+                  "test_end": "2025-03-11",
                   "train_class_distribution": {
-                    "Low": 332,
-                    "Medium": 324,
-                    "High": 303
+                    "Low": 318,
+                    "Medium": 190,
+                    "High": 127
                   },
                   "test_class_distribution": {
-                    "Low": 16,
-                    "Medium": 138,
-                    "High": 8
+                    "Low": 39,
+                    "Medium": 69,
+                    "High": 0
                   },
                   "metrics": {
-                    "accuracy": 0.8519,
-                    "balanced_accuracy": 0.3333,
-                    "f1_macro": 0.3067
+                    "accuracy": 0.6389,
+                    "balanced_accuracy": 0.5,
+                    "f1_macro": 0.3898
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0037037225295262,
+                    "medium_max": 0.00597487548683446,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1121,
-                  "test_rows": 162,
+                  "training_rows": 743,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-02-27",
-                  "test_start": "2025-03-14",
-                  "test_end": "2025-08-22",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-02-25",
+                  "test_start": "2025-03-12",
+                  "test_end": "2025-08-26",
                   "train_class_distribution": {
-                    "Low": 348,
-                    "Medium": 454,
-                    "High": 319
+                    "Low": 372,
+                    "Medium": 222,
+                    "High": 149
                   },
                   "test_class_distribution": {
-                    "Low": 124,
-                    "Medium": 26,
-                    "High": 12
+                    "Low": 97,
+                    "Medium": 5,
+                    "High": 5
                   },
                   "metrics": {
-                    "accuracy": 0.2222,
-                    "balanced_accuracy": 0.2386,
-                    "f1_macro": 0.1577
+                    "accuracy": 0.0561,
+                    "balanced_accuracy": 0.1471,
+                    "f1_macro": 0.04
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0038421785572217,
+                    "medium_max": 0.00576926426098366,
+                    "source": "training_window_only"
                   }
                 }
               ]
@@ -721,43 +1083,167 @@
       "7d": {
         "best_model": "random_forest",
         "selection_method": "Highest mean rolling-origin balanced accuracy, then macro F1 and accuracy; final holdout excluded from model selection.",
+        "reliability": {
+          "status": "experimental_not_trustworthy",
+          "gate_is_project_defined": true,
+          "checks": {
+            "balanced_accuracy_at_least_0_55": false,
+            "macro_f1_at_least_0_45": false,
+            "balanced_accuracy_beats_baseline_by_0_05": false
+          },
+          "balanced_accuracy_improvement_over_baseline": 0.0334,
+          "required": {
+            "mean_balanced_accuracy": 0.55,
+            "mean_macro_f1": 0.45,
+            "minimum_balanced_accuracy_improvement_over_baseline": 0.05
+          }
+        },
+        "baseline": {
+          "aggregate_metrics": {
+            "accuracy": 0.4506,
+            "balanced_accuracy": 0.3333,
+            "f1_macro": 0.2069
+          },
+          "folds": [
+            {
+              "fold": 1,
+              "training_rows": 535,
+              "test_rows": 108,
+              "purge_gap_rows": 7,
+              "actual_purged_rows": 5,
+              "train_start": "2022-02-16",
+              "train_end": "2024-04-19",
+              "test_start": "2024-04-29",
+              "test_end": "2024-10-08",
+              "train_class_distribution": {
+                "Low": 268,
+                "Medium": 160,
+                "High": 107
+              },
+              "test_class_distribution": {
+                "Low": 45,
+                "Medium": 51,
+                "High": 12
+              },
+              "metrics": {
+                "accuracy": 0.4167,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.1961
+              },
+              "label_thresholds": {
+                "low_max": 0.0011961614092954,
+                "medium_max": 0.010658887244116304,
+                "source": "training_window_only"
+              }
+            },
+            {
+              "fold": 2,
+              "training_rows": 643,
+              "test_rows": 108,
+              "purge_gap_rows": 7,
+              "actual_purged_rows": 5,
+              "train_start": "2022-02-16",
+              "train_end": "2024-10-01",
+              "test_start": "2024-10-09",
+              "test_end": "2025-03-14",
+              "train_class_distribution": {
+                "Low": 322,
+                "Medium": 192,
+                "High": 129
+              },
+              "test_class_distribution": {
+                "Low": 53,
+                "Medium": 38,
+                "High": 17
+              },
+              "metrics": {
+                "accuracy": 0.4907,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.2195
+              },
+              "label_thresholds": {
+                "low_max": 0.0017342284779235,
+                "medium_max": 0.010056734875250781,
+                "source": "training_window_only"
+              }
+            },
+            {
+              "fold": 3,
+              "training_rows": 751,
+              "test_rows": 108,
+              "purge_gap_rows": 7,
+              "actual_purged_rows": 5,
+              "train_start": "2022-02-16",
+              "train_end": "2025-03-07",
+              "test_start": "2025-03-17",
+              "test_end": "2025-09-01",
+              "train_class_distribution": {
+                "Low": 376,
+                "Medium": 225,
+                "High": 150
+              },
+              "test_class_distribution": {
+                "Low": 48,
+                "Medium": 26,
+                "High": 34
+              },
+              "metrics": {
+                "accuracy": 0.4444,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.2051
+              },
+              "label_thresholds": {
+                "low_max": 0.001478308526595,
+                "medium_max": 0.0096993964604006,
+                "source": "training_window_only"
+              }
+            }
+          ]
+        },
+        "holdout_label_thresholds": {
+          "low_max": 0.0018369539962825,
+          "medium_max": 0.010329451261367847,
+          "source": "training_window_only"
+        },
         "model_file": "risk_model_EUR_7d.pkl",
-        "training_rows": 1296,
-        "test_rows": 326,
-        "deployment_training_rows": 1629,
+        "training_rows": 859,
+        "test_rows": 217,
+        "deployment_training_rows": 1081,
         "purge_gap_rows": 7,
-        "train_start": "2022-02-03",
-        "train_end": "2025-08-21",
-        "test_start": "2025-08-29",
+        "purge_rule": "remove training rows whose future outcome date reaches the test period",
+        "actual_purged_rows": 5,
+        "train_start": "2022-02-16",
+        "train_end": "2025-08-25",
+        "test_start": "2025-09-02",
         "test_end": "2026-07-20",
-        "deployment_train_start": "2022-02-03",
+        "deployment_train_start": "2022-02-16",
         "deployment_train_end": "2026-07-20",
         "class_distribution": {
-          "Low": 815,
-          "Medium": 492,
-          "High": 322
+          "Low": 538,
+          "Medium": 327,
+          "High": 216
         },
         "test_class_distribution": {
-          "Low": 181,
-          "Medium": 112,
-          "High": 33
+          "Low": 120,
+          "Medium": 84,
+          "High": 13
         },
         "evaluation_note": null,
         "evaluations": {
           "logistic_regression": {
-            "accuracy": 0.2485,
-            "balanced_accuracy": 0.2693,
-            "f1_macro": 0.2058
+            "accuracy": 0.2212,
+            "balanced_accuracy": 0.2736,
+            "f1_macro": 0.1767
           },
           "random_forest": {
-            "accuracy": 0.5184,
-            "balanced_accuracy": 0.3525,
-            "f1_macro": 0.2833
+            "accuracy": 0.5576,
+            "balanced_accuracy": 0.3492,
+            "f1_macro": 0.3049
           },
           "xgboost": {
-            "accuracy": 0.5092,
-            "balanced_accuracy": 0.3208,
-            "f1_macro": 0.2702
+            "accuracy": 0.5484,
+            "balanced_accuracy": 0.3413,
+            "f1_macro": 0.2896
           }
         },
         "backtest": {
@@ -768,252 +1254,306 @@
           "candidates": {
             "logistic_regression": {
               "aggregate_metrics": {
-                "accuracy": 0.3333,
-                "balanced_accuracy": 0.3378,
-                "f1_macro": 0.2835
+                "accuracy": 0.3519,
+                "balanced_accuracy": 0.3151,
+                "f1_macro": 0.269
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 807,
-                  "test_rows": 163,
+                  "training_rows": 535,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-19",
-                  "test_start": "2024-04-27",
-                  "test_end": "2024-10-06",
+                  "test_start": "2024-04-29",
+                  "test_end": "2024-10-08",
                   "train_class_distribution": {
-                    "Low": 415,
-                    "Medium": 220,
-                    "High": 172
+                    "Low": 268,
+                    "Medium": 160,
+                    "High": 107
                   },
                   "test_class_distribution": {
-                    "Low": 67,
-                    "Medium": 60,
-                    "High": 36
+                    "Low": 45,
+                    "Medium": 51,
+                    "High": 12
                   },
                   "metrics": {
-                    "accuracy": 0.2945,
-                    "balanced_accuracy": 0.2591,
-                    "f1_macro": 0.2097
+                    "accuracy": 0.3704,
+                    "balanced_accuracy": 0.271,
+                    "f1_macro": 0.2505
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0011961614092954,
+                    "medium_max": 0.010658887244116304,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 970,
-                  "test_rows": 163,
+                  "training_rows": 643,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-29",
-                  "test_start": "2024-10-07",
-                  "test_end": "2025-03-18",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-10-01",
+                  "test_start": "2024-10-09",
+                  "test_end": "2025-03-14",
                   "train_class_distribution": {
-                    "Low": 477,
-                    "Medium": 283,
-                    "High": 210
+                    "Low": 322,
+                    "Medium": 192,
+                    "High": 129
                   },
                   "test_class_distribution": {
-                    "Low": 84,
-                    "Medium": 51,
-                    "High": 28
+                    "Low": 53,
+                    "Medium": 38,
+                    "High": 17
                   },
                   "metrics": {
-                    "accuracy": 0.3374,
-                    "balanced_accuracy": 0.4027,
-                    "f1_macro": 0.2899
+                    "accuracy": 0.3426,
+                    "balanced_accuracy": 0.3679,
+                    "f1_macro": 0.2543
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0017342284779235,
+                    "medium_max": 0.010056734875250781,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1133,
-                  "test_rows": 163,
+                  "training_rows": 751,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-03-11",
-                  "test_start": "2025-03-19",
-                  "test_end": "2025-08-28",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-03-07",
+                  "test_start": "2025-03-17",
+                  "test_end": "2025-09-01",
                   "train_class_distribution": {
-                    "Low": 563,
-                    "Medium": 332,
-                    "High": 238
+                    "Low": 376,
+                    "Medium": 225,
+                    "High": 150
                   },
                   "test_class_distribution": {
-                    "Low": 66,
-                    "Medium": 46,
-                    "High": 51
+                    "Low": 48,
+                    "Medium": 26,
+                    "High": 34
                   },
                   "metrics": {
-                    "accuracy": 0.3681,
-                    "balanced_accuracy": 0.3517,
-                    "f1_macro": 0.3509
+                    "accuracy": 0.3426,
+                    "balanced_accuracy": 0.3063,
+                    "f1_macro": 0.3023
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.001478308526595,
+                    "medium_max": 0.0096993964604006,
+                    "source": "training_window_only"
                   }
                 }
               ]
             },
             "random_forest": {
               "aggregate_metrics": {
-                "accuracy": 0.4397,
-                "balanced_accuracy": 0.3743,
-                "f1_macro": 0.296
+                "accuracy": 0.4506,
+                "balanced_accuracy": 0.3667,
+                "f1_macro": 0.2981
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 807,
-                  "test_rows": 163,
+                  "training_rows": 535,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-19",
-                  "test_start": "2024-04-27",
-                  "test_end": "2024-10-06",
+                  "test_start": "2024-04-29",
+                  "test_end": "2024-10-08",
                   "train_class_distribution": {
-                    "Low": 415,
-                    "Medium": 220,
-                    "High": 172
+                    "Low": 268,
+                    "Medium": 160,
+                    "High": 107
                   },
                   "test_class_distribution": {
-                    "Low": 67,
-                    "Medium": 60,
-                    "High": 36
+                    "Low": 45,
+                    "Medium": 51,
+                    "High": 12
                   },
                   "metrics": {
-                    "accuracy": 0.411,
-                    "balanced_accuracy": 0.3333,
-                    "f1_macro": 0.1942
+                    "accuracy": 0.4444,
+                    "balanced_accuracy": 0.3529,
+                    "f1_macro": 0.237
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0011961614092954,
+                    "medium_max": 0.010658887244116304,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 970,
-                  "test_rows": 163,
+                  "training_rows": 643,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-29",
-                  "test_start": "2024-10-07",
-                  "test_end": "2025-03-18",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-10-01",
+                  "test_start": "2024-10-09",
+                  "test_end": "2025-03-14",
                   "train_class_distribution": {
-                    "Low": 477,
-                    "Medium": 283,
-                    "High": 210
+                    "Low": 322,
+                    "Medium": 192,
+                    "High": 129
                   },
                   "test_class_distribution": {
-                    "Low": 84,
-                    "Medium": 51,
-                    "High": 28
+                    "Low": 53,
+                    "Medium": 38,
+                    "High": 17
                   },
                   "metrics": {
-                    "accuracy": 0.4663,
-                    "balanced_accuracy": 0.4083,
-                    "f1_macro": 0.4075
+                    "accuracy": 0.4722,
+                    "balanced_accuracy": 0.4036,
+                    "f1_macro": 0.3777
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0017342284779235,
+                    "medium_max": 0.010056734875250781,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1133,
-                  "test_rows": 163,
+                  "training_rows": 751,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-03-11",
-                  "test_start": "2025-03-19",
-                  "test_end": "2025-08-28",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-03-07",
+                  "test_start": "2025-03-17",
+                  "test_end": "2025-09-01",
                   "train_class_distribution": {
-                    "Low": 563,
-                    "Medium": 332,
-                    "High": 238
+                    "Low": 376,
+                    "Medium": 225,
+                    "High": 150
                   },
                   "test_class_distribution": {
-                    "Low": 66,
-                    "Medium": 46,
-                    "High": 51
+                    "Low": 48,
+                    "Medium": 26,
+                    "High": 34
                   },
                   "metrics": {
-                    "accuracy": 0.4417,
-                    "balanced_accuracy": 0.3812,
-                    "f1_macro": 0.2863
+                    "accuracy": 0.4352,
+                    "balanced_accuracy": 0.3435,
+                    "f1_macro": 0.2797
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.001478308526595,
+                    "medium_max": 0.0096993964604006,
+                    "source": "training_window_only"
                   }
                 }
               ]
             },
             "xgboost": {
               "aggregate_metrics": {
-                "accuracy": 0.3824,
-                "balanced_accuracy": 0.3161,
-                "f1_macro": 0.2307
+                "accuracy": 0.4259,
+                "balanced_accuracy": 0.3364,
+                "f1_macro": 0.2357
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 807,
-                  "test_rows": 163,
+                  "training_rows": 535,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-19",
-                  "test_start": "2024-04-27",
-                  "test_end": "2024-10-06",
+                  "test_start": "2024-04-29",
+                  "test_end": "2024-10-08",
                   "train_class_distribution": {
-                    "Low": 415,
-                    "Medium": 220,
-                    "High": 172
+                    "Low": 268,
+                    "Medium": 160,
+                    "High": 107
                   },
                   "test_class_distribution": {
-                    "Low": 67,
-                    "Medium": 60,
-                    "High": 36
+                    "Low": 45,
+                    "Medium": 51,
+                    "High": 12
                   },
                   "metrics": {
-                    "accuracy": 0.411,
+                    "accuracy": 0.4167,
                     "balanced_accuracy": 0.3333,
-                    "f1_macro": 0.1942
+                    "f1_macro": 0.1961
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0011961614092954,
+                    "medium_max": 0.010658887244116304,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 970,
-                  "test_rows": 163,
+                  "training_rows": 643,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-29",
-                  "test_start": "2024-10-07",
-                  "test_end": "2025-03-18",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-10-01",
+                  "test_start": "2024-10-09",
+                  "test_end": "2025-03-14",
                   "train_class_distribution": {
-                    "Low": 477,
-                    "Medium": 283,
-                    "High": 210
+                    "Low": 322,
+                    "Medium": 192,
+                    "High": 129
                   },
                   "test_class_distribution": {
-                    "Low": 84,
-                    "Medium": 51,
-                    "High": 28
+                    "Low": 53,
+                    "Medium": 38,
+                    "High": 17
                   },
                   "metrics": {
-                    "accuracy": 0.3129,
-                    "balanced_accuracy": 0.2621,
-                    "f1_macro": 0.2624
+                    "accuracy": 0.4167,
+                    "balanced_accuracy": 0.3426,
+                    "f1_macro": 0.3058
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0017342284779235,
+                    "medium_max": 0.010056734875250781,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1133,
-                  "test_rows": 163,
+                  "training_rows": 751,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-03-11",
-                  "test_start": "2025-03-19",
-                  "test_end": "2025-08-28",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-03-07",
+                  "test_start": "2025-03-17",
+                  "test_end": "2025-09-01",
                   "train_class_distribution": {
-                    "Low": 563,
-                    "Medium": 332,
-                    "High": 238
+                    "Low": 376,
+                    "Medium": 225,
+                    "High": 150
                   },
                   "test_class_distribution": {
-                    "Low": 66,
-                    "Medium": 46,
-                    "High": 51
+                    "Low": 48,
+                    "Medium": 26,
+                    "High": 34
                   },
                   "metrics": {
-                    "accuracy": 0.4233,
-                    "balanced_accuracy": 0.3529,
-                    "f1_macro": 0.2355
+                    "accuracy": 0.4444,
+                    "balanced_accuracy": 0.3333,
+                    "f1_macro": 0.2051
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.001478308526595,
+                    "medium_max": 0.0096993964604006,
+                    "source": "training_window_only"
                   }
                 }
               ]
@@ -1022,45 +1562,169 @@
         }
       },
       "14d": {
-        "best_model": "logistic_regression",
+        "best_model": "xgboost",
         "selection_method": "Highest mean rolling-origin balanced accuracy, then macro F1 and accuracy; final holdout excluded from model selection.",
+        "reliability": {
+          "status": "experimental_not_trustworthy",
+          "gate_is_project_defined": true,
+          "checks": {
+            "balanced_accuracy_at_least_0_55": false,
+            "macro_f1_at_least_0_45": false,
+            "balanced_accuracy_beats_baseline_by_0_05": false
+          },
+          "balanced_accuracy_improvement_over_baseline": 0.0187,
+          "required": {
+            "mean_balanced_accuracy": 0.55,
+            "mean_macro_f1": 0.45,
+            "minimum_balanced_accuracy_improvement_over_baseline": 0.05
+          }
+        },
+        "baseline": {
+          "aggregate_metrics": {
+            "accuracy": 0.4716,
+            "balanced_accuracy": 0.3333,
+            "f1_macro": 0.2115
+          },
+          "folds": [
+            {
+              "fold": 1,
+              "training_rows": 528,
+              "test_rows": 107,
+              "purge_gap_rows": 14,
+              "actual_purged_rows": 10,
+              "train_start": "2022-02-16",
+              "train_end": "2024-04-09",
+              "test_start": "2024-04-25",
+              "test_end": "2024-10-03",
+              "train_class_distribution": {
+                "Low": 264,
+                "Medium": 158,
+                "High": 106
+              },
+              "test_class_distribution": {
+                "Low": 38,
+                "Medium": 57,
+                "High": 12
+              },
+              "metrics": {
+                "accuracy": 0.3551,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.1747
+              },
+              "label_thresholds": {
+                "low_max": 0.0034351818298141,
+                "medium_max": 0.0170843835412851,
+                "source": "training_window_only"
+              }
+            },
+            {
+              "fold": 2,
+              "training_rows": 635,
+              "test_rows": 108,
+              "purge_gap_rows": 14,
+              "actual_purged_rows": 10,
+              "train_start": "2022-02-16",
+              "train_end": "2024-09-19",
+              "test_start": "2024-10-04",
+              "test_end": "2025-03-11",
+              "train_class_distribution": {
+                "Low": 318,
+                "Medium": 190,
+                "High": 127
+              },
+              "test_class_distribution": {
+                "Low": 65,
+                "Medium": 22,
+                "High": 21
+              },
+              "metrics": {
+                "accuracy": 0.6019,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.2505
+              },
+              "label_thresholds": {
+                "low_max": 0.0046149453229304,
+                "medium_max": 0.01603621107213178,
+                "source": "training_window_only"
+              }
+            },
+            {
+              "fold": 3,
+              "training_rows": 743,
+              "test_rows": 107,
+              "purge_gap_rows": 14,
+              "actual_purged_rows": 10,
+              "train_start": "2022-02-16",
+              "train_end": "2025-02-25",
+              "test_start": "2025-03-12",
+              "test_end": "2025-08-26",
+              "train_class_distribution": {
+                "Low": 372,
+                "Medium": 222,
+                "High": 149
+              },
+              "test_class_distribution": {
+                "Low": 49,
+                "Medium": 27,
+                "High": 31
+              },
+              "metrics": {
+                "accuracy": 0.4579,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.2094
+              },
+              "label_thresholds": {
+                "low_max": 0.0039634434671962,
+                "medium_max": 0.015541678116612482,
+                "source": "training_window_only"
+              }
+            }
+          ]
+        },
+        "holdout_label_thresholds": {
+          "low_max": 0.0044097509651166,
+          "medium_max": 0.0164264233122473,
+          "source": "training_window_only"
+        },
         "model_file": "risk_model_EUR_14d.pkl",
-        "training_rows": 1283,
-        "test_rows": 325,
-        "deployment_training_rows": 1622,
+        "training_rows": 851,
+        "test_rows": 216,
+        "deployment_training_rows": 1076,
         "purge_gap_rows": 14,
-        "train_start": "2022-02-03",
-        "train_end": "2025-08-08",
-        "test_start": "2025-08-23",
+        "purge_rule": "remove training rows whose future outcome date reaches the test period",
+        "actual_purged_rows": 9,
+        "train_start": "2022-02-16",
+        "train_end": "2025-08-12",
+        "test_start": "2025-08-27",
         "test_end": "2026-07-13",
-        "deployment_train_start": "2022-02-03",
+        "deployment_train_start": "2022-02-16",
         "deployment_train_end": "2026-07-13",
         "class_distribution": {
-          "Low": 815,
-          "Medium": 482,
-          "High": 325
+          "Low": 536,
+          "Medium": 322,
+          "High": 218
         },
         "test_class_distribution": {
-          "Low": 205,
-          "Medium": 97,
-          "High": 23
+          "Low": 156,
+          "Medium": 51,
+          "High": 9
         },
         "evaluation_note": null,
         "evaluations": {
           "logistic_regression": {
-            "accuracy": 0.6154,
-            "balanced_accuracy": 0.3526,
-            "f1_macro": 0.3201
+            "accuracy": 0.6806,
+            "balanced_accuracy": 0.3757,
+            "f1_macro": 0.3723
           },
           "random_forest": {
-            "accuracy": 0.5569,
-            "balanced_accuracy": 0.3378,
-            "f1_macro": 0.3236
+            "accuracy": 0.6944,
+            "balanced_accuracy": 0.3777,
+            "f1_macro": 0.3718
           },
           "xgboost": {
-            "accuracy": 0.5908,
-            "balanced_accuracy": 0.3412,
-            "f1_macro": 0.317
+            "accuracy": 0.7222,
+            "balanced_accuracy": 0.3685,
+            "f1_macro": 0.3564
           }
         },
         "backtest": {
@@ -1071,252 +1735,306 @@
           "candidates": {
             "logistic_regression": {
               "aggregate_metrics": {
-                "accuracy": 0.358,
-                "balanced_accuracy": 0.3532,
-                "f1_macro": 0.2717
+                "accuracy": 0.3233,
+                "balanced_accuracy": 0.3155,
+                "f1_macro": 0.2309
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 797,
-                  "test_rows": 162,
+                  "training_rows": 528,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-09",
-                  "test_start": "2024-04-24",
-                  "test_end": "2024-10-02",
+                  "test_start": "2024-04-25",
+                  "test_end": "2024-10-03",
                   "train_class_distribution": {
-                    "Low": 390,
-                    "Medium": 225,
-                    "High": 182
+                    "Low": 264,
+                    "Medium": 158,
+                    "High": 106
                   },
                   "test_class_distribution": {
-                    "Low": 57,
-                    "Medium": 69,
-                    "High": 36
+                    "Low": 38,
+                    "Medium": 57,
+                    "High": 12
                   },
                   "metrics": {
-                    "accuracy": 0.3642,
-                    "balanced_accuracy": 0.2962,
-                    "f1_macro": 0.2444
+                    "accuracy": 0.3738,
+                    "balanced_accuracy": 0.2427,
+                    "f1_macro": 0.2174
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0034351818298141,
+                    "medium_max": 0.0170843835412851,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 959,
-                  "test_rows": 162,
+                  "training_rows": 635,
+                  "test_rows": 108,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-18",
-                  "test_start": "2024-10-03",
-                  "test_end": "2025-03-13",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-09-19",
+                  "test_start": "2024-10-04",
+                  "test_end": "2025-03-11",
                   "train_class_distribution": {
-                    "Low": 435,
-                    "Medium": 306,
-                    "High": 218
+                    "Low": 318,
+                    "Medium": 190,
+                    "High": 127
                   },
                   "test_class_distribution": {
-                    "Low": 88,
-                    "Medium": 43,
-                    "High": 31
+                    "Low": 65,
+                    "Medium": 22,
+                    "High": 21
                   },
                   "metrics": {
-                    "accuracy": 0.2654,
+                    "accuracy": 0.2037,
                     "balanced_accuracy": 0.3333,
-                    "f1_macro": 0.1398
+                    "f1_macro": 0.1128
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0046149453229304,
+                    "medium_max": 0.01603621107213178,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1121,
-                  "test_rows": 162,
+                  "training_rows": 743,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-02-27",
-                  "test_start": "2025-03-14",
-                  "test_end": "2025-08-22",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-02-25",
+                  "test_start": "2025-03-12",
+                  "test_end": "2025-08-26",
                   "train_class_distribution": {
-                    "Low": 533,
-                    "Medium": 346,
-                    "High": 242
+                    "Low": 372,
+                    "Medium": 222,
+                    "High": 149
                   },
                   "test_class_distribution": {
-                    "Low": 73,
-                    "Medium": 36,
-                    "High": 53
+                    "Low": 49,
+                    "Medium": 27,
+                    "High": 31
                   },
                   "metrics": {
-                    "accuracy": 0.4444,
-                    "balanced_accuracy": 0.4302,
-                    "f1_macro": 0.4309
+                    "accuracy": 0.3925,
+                    "balanced_accuracy": 0.3704,
+                    "f1_macro": 0.3625
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0039634434671962,
+                    "medium_max": 0.015541678116612482,
+                    "source": "training_window_only"
                   }
                 }
               ]
             },
             "random_forest": {
               "aggregate_metrics": {
-                "accuracy": 0.3395,
-                "balanced_accuracy": 0.3226,
-                "f1_macro": 0.1918
+                "accuracy": 0.3606,
+                "balanced_accuracy": 0.3393,
+                "f1_macro": 0.1959
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 797,
-                  "test_rows": 162,
+                  "training_rows": 528,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-09",
-                  "test_start": "2024-04-24",
-                  "test_end": "2024-10-02",
+                  "test_start": "2024-04-25",
+                  "test_end": "2024-10-03",
                   "train_class_distribution": {
-                    "Low": 390,
-                    "Medium": 225,
-                    "High": 182
+                    "Low": 264,
+                    "Medium": 158,
+                    "High": 106
                   },
                   "test_class_distribution": {
-                    "Low": 57,
-                    "Medium": 69,
-                    "High": 36
+                    "Low": 38,
+                    "Medium": 57,
+                    "High": 12
                   },
                   "metrics": {
-                    "accuracy": 0.3519,
-                    "balanced_accuracy": 0.3333,
-                    "f1_macro": 0.1759
+                    "accuracy": 0.3832,
+                    "balanced_accuracy": 0.3509,
+                    "f1_macro": 0.2125
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0034351818298141,
+                    "medium_max": 0.0170843835412851,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 959,
-                  "test_rows": 162,
+                  "training_rows": 635,
+                  "test_rows": 108,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-18",
-                  "test_start": "2024-10-03",
-                  "test_end": "2025-03-13",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-09-19",
+                  "test_start": "2024-10-04",
+                  "test_end": "2025-03-11",
                   "train_class_distribution": {
-                    "Low": 435,
-                    "Medium": 306,
-                    "High": 218
+                    "Low": 318,
+                    "Medium": 190,
+                    "High": 127
                   },
                   "test_class_distribution": {
-                    "Low": 88,
-                    "Medium": 43,
-                    "High": 31
+                    "Low": 65,
+                    "Medium": 22,
+                    "High": 21
                   },
                   "metrics": {
-                    "accuracy": 0.216,
-                    "balanced_accuracy": 0.3013,
-                    "f1_macro": 0.1923
+                    "accuracy": 0.2407,
+                    "balanced_accuracy": 0.3338,
+                    "f1_macro": 0.1659
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0046149453229304,
+                    "medium_max": 0.01603621107213178,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1121,
-                  "test_rows": 162,
+                  "training_rows": 743,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-02-27",
-                  "test_start": "2025-03-14",
-                  "test_end": "2025-08-22",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-02-25",
+                  "test_start": "2025-03-12",
+                  "test_end": "2025-08-26",
                   "train_class_distribution": {
-                    "Low": 533,
-                    "Medium": 346,
-                    "High": 242
+                    "Low": 372,
+                    "Medium": 222,
+                    "High": 149
                   },
                   "test_class_distribution": {
-                    "Low": 73,
-                    "Medium": 36,
-                    "High": 53
+                    "Low": 49,
+                    "Medium": 27,
+                    "High": 31
                   },
                   "metrics": {
-                    "accuracy": 0.4506,
+                    "accuracy": 0.4579,
                     "balanced_accuracy": 0.3333,
-                    "f1_macro": 0.2071
+                    "f1_macro": 0.2094
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0039634434671962,
+                    "medium_max": 0.015541678116612482,
+                    "source": "training_window_only"
                   }
                 }
               ]
             },
             "xgboost": {
               "aggregate_metrics": {
-                "accuracy": 0.3436,
-                "balanced_accuracy": 0.3226,
-                "f1_macro": 0.2072
+                "accuracy": 0.3823,
+                "balanced_accuracy": 0.352,
+                "f1_macro": 0.2189
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 797,
-                  "test_rows": 162,
+                  "training_rows": 528,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-09",
-                  "test_start": "2024-04-24",
-                  "test_end": "2024-10-02",
+                  "test_start": "2024-04-25",
+                  "test_end": "2024-10-03",
                   "train_class_distribution": {
-                    "Low": 390,
-                    "Medium": 225,
-                    "High": 182
+                    "Low": 264,
+                    "Medium": 158,
+                    "High": 106
                   },
                   "test_class_distribution": {
-                    "Low": 57,
-                    "Medium": 69,
-                    "High": 36
+                    "Low": 38,
+                    "Medium": 57,
+                    "High": 12
                   },
                   "metrics": {
-                    "accuracy": 0.3519,
-                    "balanced_accuracy": 0.3333,
-                    "f1_macro": 0.1759
+                    "accuracy": 0.4112,
+                    "balanced_accuracy": 0.3684,
+                    "f1_macro": 0.2461
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0034351818298141,
+                    "medium_max": 0.0170843835412851,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 959,
-                  "test_rows": 162,
+                  "training_rows": 635,
+                  "test_rows": 108,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-18",
-                  "test_start": "2024-10-03",
-                  "test_end": "2025-03-13",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-09-19",
+                  "test_start": "2024-10-04",
+                  "test_end": "2025-03-11",
                   "train_class_distribution": {
-                    "Low": 435,
-                    "Medium": 306,
-                    "High": 218
+                    "Low": 318,
+                    "Medium": 190,
+                    "High": 127
                   },
                   "test_class_distribution": {
-                    "Low": 88,
-                    "Medium": 43,
-                    "High": 31
+                    "Low": 65,
+                    "Medium": 22,
+                    "High": 21
                   },
                   "metrics": {
-                    "accuracy": 0.216,
-                    "balanced_accuracy": 0.2825,
-                    "f1_macro": 0.2016
+                    "accuracy": 0.2778,
+                    "balanced_accuracy": 0.3543,
+                    "f1_macro": 0.2013
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0046149453229304,
+                    "medium_max": 0.01603621107213178,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1121,
-                  "test_rows": 162,
+                  "training_rows": 743,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-02-27",
-                  "test_start": "2025-03-14",
-                  "test_end": "2025-08-22",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-02-25",
+                  "test_start": "2025-03-12",
+                  "test_end": "2025-08-26",
                   "train_class_distribution": {
-                    "Low": 533,
-                    "Medium": 346,
-                    "High": 242
+                    "Low": 372,
+                    "Medium": 222,
+                    "High": 149
                   },
                   "test_class_distribution": {
-                    "Low": 73,
-                    "Medium": 36,
-                    "High": 53
+                    "Low": 49,
+                    "Medium": 27,
+                    "High": 31
                   },
                   "metrics": {
-                    "accuracy": 0.463,
-                    "balanced_accuracy": 0.3519,
-                    "f1_macro": 0.244
+                    "accuracy": 0.4579,
+                    "balanced_accuracy": 0.3333,
+                    "f1_macro": 0.2094
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0039634434671962,
+                    "medium_max": 0.015541678116612482,
+                    "source": "training_window_only"
                   }
                 }
               ]
@@ -1327,45 +2045,169 @@
     },
     "KES": {
       "7d": {
-        "best_model": "random_forest",
+        "best_model": "logistic_regression",
         "selection_method": "Highest mean rolling-origin balanced accuracy, then macro F1 and accuracy; final holdout excluded from model selection.",
+        "reliability": {
+          "status": "experimental_not_trustworthy",
+          "gate_is_project_defined": true,
+          "checks": {
+            "balanced_accuracy_at_least_0_55": false,
+            "macro_f1_at_least_0_45": false,
+            "balanced_accuracy_beats_baseline_by_0_05": false
+          },
+          "balanced_accuracy_improvement_over_baseline": 0.0389,
+          "required": {
+            "mean_balanced_accuracy": 0.55,
+            "mean_macro_f1": 0.45,
+            "minimum_balanced_accuracy_improvement_over_baseline": 0.05
+          }
+        },
+        "baseline": {
+          "aggregate_metrics": {
+            "accuracy": 0.1358,
+            "balanced_accuracy": 0.3333,
+            "f1_macro": 0.0791
+          },
+          "folds": [
+            {
+              "fold": 1,
+              "training_rows": 535,
+              "test_rows": 108,
+              "purge_gap_rows": 7,
+              "actual_purged_rows": 5,
+              "train_start": "2022-02-16",
+              "train_end": "2024-04-19",
+              "test_start": "2024-04-29",
+              "test_end": "2024-10-08",
+              "train_class_distribution": {
+                "Low": 268,
+                "Medium": 160,
+                "High": 107
+              },
+              "test_class_distribution": {
+                "Low": 20,
+                "Medium": 6,
+                "High": 82
+              },
+              "metrics": {
+                "accuracy": 0.1852,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.1042
+              },
+              "label_thresholds": {
+                "low_max": -0.0007290579385558,
+                "medium_max": 0.001231561689132021,
+                "source": "training_window_only"
+              }
+            },
+            {
+              "fold": 2,
+              "training_rows": 643,
+              "test_rows": 108,
+              "purge_gap_rows": 7,
+              "actual_purged_rows": 5,
+              "train_start": "2022-02-16",
+              "train_end": "2024-10-01",
+              "test_start": "2024-10-09",
+              "test_end": "2025-03-14",
+              "train_class_distribution": {
+                "Low": 322,
+                "Medium": 192,
+                "High": 129
+              },
+              "test_class_distribution": {
+                "Low": 10,
+                "Medium": 66,
+                "High": 32
+              },
+              "metrics": {
+                "accuracy": 0.0926,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.0565
+              },
+              "label_thresholds": {
+                "low_max": -0.0004200916010255,
+                "medium_max": 0.0025653588178458204,
+                "source": "training_window_only"
+              }
+            },
+            {
+              "fold": 3,
+              "training_rows": 751,
+              "test_rows": 108,
+              "purge_gap_rows": 7,
+              "actual_purged_rows": 5,
+              "train_start": "2022-02-16",
+              "train_end": "2025-03-07",
+              "test_start": "2025-03-17",
+              "test_end": "2025-09-01",
+              "train_class_distribution": {
+                "Low": 376,
+                "Medium": 225,
+                "High": 150
+              },
+              "test_class_distribution": {
+                "Low": 14,
+                "Medium": 85,
+                "High": 9
+              },
+              "metrics": {
+                "accuracy": 0.1296,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.0765
+              },
+              "label_thresholds": {
+                "low_max": -5.964407733183297e-05,
+                "medium_max": 0.0027360835322602,
+                "source": "training_window_only"
+              }
+            }
+          ]
+        },
+        "holdout_label_thresholds": {
+          "low_max": 0.0002319006173938,
+          "medium_max": 0.0025625092163428813,
+          "source": "training_window_only"
+        },
         "model_file": "risk_model_KES_7d.pkl",
-        "training_rows": 1296,
-        "test_rows": 326,
-        "deployment_training_rows": 1629,
+        "training_rows": 859,
+        "test_rows": 217,
+        "deployment_training_rows": 1081,
         "purge_gap_rows": 7,
-        "train_start": "2022-02-03",
-        "train_end": "2025-08-21",
-        "test_start": "2025-08-29",
+        "purge_rule": "remove training rows whose future outcome date reaches the test period",
+        "actual_purged_rows": 5,
+        "train_start": "2022-02-16",
+        "train_end": "2025-08-25",
+        "test_start": "2025-09-02",
         "test_end": "2026-07-20",
-        "deployment_train_start": "2022-02-03",
+        "deployment_train_start": "2022-02-16",
         "deployment_train_end": "2026-07-20",
         "class_distribution": {
-          "Low": 809,
-          "Medium": 491,
-          "High": 329
+          "Low": 537,
+          "Medium": 325,
+          "High": 219
         },
         "test_class_distribution": {
-          "Low": 145,
-          "Medium": 150,
-          "High": 31
+          "Low": 96,
+          "Medium": 110,
+          "High": 11
         },
         "evaluation_note": null,
         "evaluations": {
           "logistic_regression": {
-            "accuracy": 0.4601,
+            "accuracy": 0.5069,
             "balanced_accuracy": 0.3333,
-            "f1_macro": 0.2101
+            "f1_macro": 0.2243
           },
           "random_forest": {
-            "accuracy": 0.4479,
-            "balanced_accuracy": 0.4188,
-            "f1_macro": 0.334
+            "accuracy": 0.53,
+            "balanced_accuracy": 0.3533,
+            "f1_macro": 0.2912
           },
           "xgboost": {
-            "accuracy": 0.4448,
-            "balanced_accuracy": 0.4845,
-            "f1_macro": 0.3462
+            "accuracy": 0.5161,
+            "balanced_accuracy": 0.3416,
+            "f1_macro": 0.2595
           }
         },
         "backtest": {
@@ -1376,252 +2218,306 @@
           "candidates": {
             "logistic_regression": {
               "aggregate_metrics": {
-                "accuracy": 0.4233,
-                "balanced_accuracy": 0.3544,
-                "f1_macro": 0.2289
+                "accuracy": 0.5062,
+                "balanced_accuracy": 0.3722,
+                "f1_macro": 0.2268
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 807,
-                  "test_rows": 163,
+                  "training_rows": 535,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-19",
-                  "test_start": "2024-04-27",
-                  "test_end": "2024-10-06",
+                  "test_start": "2024-04-29",
+                  "test_end": "2024-10-08",
                   "train_class_distribution": {
-                    "Low": 559,
-                    "Medium": 140,
-                    "High": 108
+                    "Low": 268,
+                    "Medium": 160,
+                    "High": 107
                   },
                   "test_class_distribution": {
-                    "Low": 38,
-                    "Medium": 34,
-                    "High": 91
+                    "Low": 20,
+                    "Medium": 6,
+                    "High": 82
                   },
                   "metrics": {
-                    "accuracy": 0.2638,
-                    "balanced_accuracy": 0.403,
-                    "f1_macro": 0.2428
+                    "accuracy": 0.1204,
+                    "balanced_accuracy": 0.45,
+                    "f1_macro": 0.1338
+                  },
+                  "label_thresholds": {
+                    "low_max": -0.0007290579385558,
+                    "medium_max": 0.001231561689132021,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 970,
-                  "test_rows": 163,
+                  "training_rows": 643,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-29",
-                  "test_start": "2024-10-07",
-                  "test_end": "2025-03-18",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-10-01",
+                  "test_start": "2024-10-09",
+                  "test_end": "2025-03-14",
                   "train_class_distribution": {
-                    "Low": 603,
-                    "Medium": 175,
-                    "High": 192
+                    "Low": 322,
+                    "Medium": 192,
+                    "High": 129
                   },
                   "test_class_distribution": {
-                    "Low": 29,
-                    "Medium": 60,
-                    "High": 74
+                    "Low": 10,
+                    "Medium": 66,
+                    "High": 32
                   },
                   "metrics": {
-                    "accuracy": 0.3681,
+                    "accuracy": 0.6111,
                     "balanced_accuracy": 0.3333,
-                    "f1_macro": 0.1794
+                    "f1_macro": 0.2529
+                  },
+                  "label_thresholds": {
+                    "low_max": -0.0004200916010255,
+                    "medium_max": 0.0025653588178458204,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1133,
-                  "test_rows": 163,
+                  "training_rows": 751,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-03-11",
-                  "test_start": "2025-03-19",
-                  "test_end": "2025-08-28",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-03-07",
+                  "test_start": "2025-03-17",
+                  "test_end": "2025-09-01",
                   "train_class_distribution": {
-                    "Low": 631,
-                    "Medium": 234,
-                    "High": 268
+                    "Low": 376,
+                    "Medium": 225,
+                    "High": 150
                   },
                   "test_class_distribution": {
-                    "Low": 32,
-                    "Medium": 106,
-                    "High": 25
+                    "Low": 14,
+                    "Medium": 85,
+                    "High": 9
                   },
                   "metrics": {
-                    "accuracy": 0.638,
-                    "balanced_accuracy": 0.327,
-                    "f1_macro": 0.2646
+                    "accuracy": 0.787,
+                    "balanced_accuracy": 0.3333,
+                    "f1_macro": 0.2936
+                  },
+                  "label_thresholds": {
+                    "low_max": -5.964407733183297e-05,
+                    "medium_max": 0.0027360835322602,
+                    "source": "training_window_only"
                   }
                 }
               ]
             },
             "random_forest": {
               "aggregate_metrics": {
-                "accuracy": 0.3211,
-                "balanced_accuracy": 0.3746,
-                "f1_macro": 0.2386
+                "accuracy": 0.2469,
+                "balanced_accuracy": 0.3257,
+                "f1_macro": 0.1819
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 807,
-                  "test_rows": 163,
+                  "training_rows": 535,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-19",
-                  "test_start": "2024-04-27",
-                  "test_end": "2024-10-06",
+                  "test_start": "2024-04-29",
+                  "test_end": "2024-10-08",
                   "train_class_distribution": {
-                    "Low": 559,
-                    "Medium": 140,
-                    "High": 108
+                    "Low": 268,
+                    "Medium": 160,
+                    "High": 107
                   },
                   "test_class_distribution": {
-                    "Low": 38,
-                    "Medium": 34,
-                    "High": 91
+                    "Low": 20,
+                    "Medium": 6,
+                    "High": 82
                   },
                   "metrics": {
-                    "accuracy": 0.3252,
-                    "balanced_accuracy": 0.4252,
-                    "f1_macro": 0.3262
+                    "accuracy": 0.2222,
+                    "balanced_accuracy": 0.3244,
+                    "f1_macro": 0.1556
+                  },
+                  "label_thresholds": {
+                    "low_max": -0.0007290579385558,
+                    "medium_max": 0.001231561689132021,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 970,
-                  "test_rows": 163,
+                  "training_rows": 643,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-29",
-                  "test_start": "2024-10-07",
-                  "test_end": "2025-03-18",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-10-01",
+                  "test_start": "2024-10-09",
+                  "test_end": "2025-03-14",
                   "train_class_distribution": {
-                    "Low": 603,
-                    "Medium": 175,
-                    "High": 192
+                    "Low": 322,
+                    "Medium": 192,
+                    "High": 129
                   },
                   "test_class_distribution": {
-                    "Low": 29,
-                    "Medium": 60,
-                    "High": 74
+                    "Low": 10,
+                    "Medium": 66,
+                    "High": 32
                   },
                   "metrics": {
-                    "accuracy": 0.4417,
-                    "balanced_accuracy": 0.3243,
-                    "f1_macro": 0.2043
+                    "accuracy": 0.2963,
+                    "balanced_accuracy": 0.3333,
+                    "f1_macro": 0.1524
+                  },
+                  "label_thresholds": {
+                    "low_max": -0.0004200916010255,
+                    "medium_max": 0.0025653588178458204,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1133,
-                  "test_rows": 163,
+                  "training_rows": 751,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-03-11",
-                  "test_start": "2025-03-19",
-                  "test_end": "2025-08-28",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-03-07",
+                  "test_start": "2025-03-17",
+                  "test_end": "2025-09-01",
                   "train_class_distribution": {
-                    "Low": 631,
-                    "Medium": 234,
-                    "High": 268
+                    "Low": 376,
+                    "Medium": 225,
+                    "High": 150
                   },
                   "test_class_distribution": {
-                    "Low": 32,
-                    "Medium": 106,
-                    "High": 25
+                    "Low": 14,
+                    "Medium": 85,
+                    "High": 9
                   },
                   "metrics": {
-                    "accuracy": 0.1963,
-                    "balanced_accuracy": 0.3742,
-                    "f1_macro": 0.1852
+                    "accuracy": 0.2222,
+                    "balanced_accuracy": 0.3194,
+                    "f1_macro": 0.2377
+                  },
+                  "label_thresholds": {
+                    "low_max": -5.964407733183297e-05,
+                    "medium_max": 0.0027360835322602,
+                    "source": "training_window_only"
                   }
                 }
               ]
             },
             "xgboost": {
               "aggregate_metrics": {
-                "accuracy": 0.2638,
-                "balanced_accuracy": 0.3355,
-                "f1_macro": 0.2093
+                "accuracy": 0.2901,
+                "balanced_accuracy": 0.3316,
+                "f1_macro": 0.2244
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 807,
-                  "test_rows": 163,
+                  "training_rows": 535,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-19",
-                  "test_start": "2024-04-27",
-                  "test_end": "2024-10-06",
+                  "test_start": "2024-04-29",
+                  "test_end": "2024-10-08",
                   "train_class_distribution": {
-                    "Low": 559,
-                    "Medium": 140,
-                    "High": 108
+                    "Low": 268,
+                    "Medium": 160,
+                    "High": 107
                   },
                   "test_class_distribution": {
-                    "Low": 38,
-                    "Medium": 34,
-                    "High": 91
+                    "Low": 20,
+                    "Medium": 6,
+                    "High": 82
                   },
                   "metrics": {
-                    "accuracy": 0.2147,
-                    "balanced_accuracy": 0.2978,
-                    "f1_macro": 0.145
+                    "accuracy": 0.1852,
+                    "balanced_accuracy": 0.3207,
+                    "f1_macro": 0.11
+                  },
+                  "label_thresholds": {
+                    "low_max": -0.0007290579385558,
+                    "medium_max": 0.001231561689132021,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 970,
-                  "test_rows": 163,
+                  "training_rows": 643,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-29",
-                  "test_start": "2024-10-07",
-                  "test_end": "2025-03-18",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-10-01",
+                  "test_start": "2024-10-09",
+                  "test_end": "2025-03-14",
                   "train_class_distribution": {
-                    "Low": 603,
-                    "Medium": 175,
-                    "High": 192
+                    "Low": 322,
+                    "Medium": 192,
+                    "High": 129
                   },
                   "test_class_distribution": {
-                    "Low": 29,
-                    "Medium": 60,
-                    "High": 74
+                    "Low": 10,
+                    "Medium": 66,
+                    "High": 32
                   },
                   "metrics": {
-                    "accuracy": 0.3681,
-                    "balanced_accuracy": 0.3821,
-                    "f1_macro": 0.284
+                    "accuracy": 0.3519,
+                    "balanced_accuracy": 0.3275,
+                    "f1_macro": 0.2895
+                  },
+                  "label_thresholds": {
+                    "low_max": -0.0004200916010255,
+                    "medium_max": 0.0025653588178458204,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1133,
-                  "test_rows": 163,
+                  "training_rows": 751,
+                  "test_rows": 108,
                   "purge_gap_rows": 7,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-03-11",
-                  "test_start": "2025-03-19",
-                  "test_end": "2025-08-28",
+                  "actual_purged_rows": 5,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-03-07",
+                  "test_start": "2025-03-17",
+                  "test_end": "2025-09-01",
                   "train_class_distribution": {
-                    "Low": 631,
-                    "Medium": 234,
-                    "High": 268
+                    "Low": 376,
+                    "Medium": 225,
+                    "High": 150
                   },
                   "test_class_distribution": {
-                    "Low": 32,
-                    "Medium": 106,
-                    "High": 25
+                    "Low": 14,
+                    "Medium": 85,
+                    "High": 9
                   },
                   "metrics": {
-                    "accuracy": 0.2086,
-                    "balanced_accuracy": 0.3267,
-                    "f1_macro": 0.199
+                    "accuracy": 0.3333,
+                    "balanced_accuracy": 0.3465,
+                    "f1_macro": 0.2738
+                  },
+                  "label_thresholds": {
+                    "low_max": -5.964407733183297e-05,
+                    "medium_max": 0.0027360835322602,
+                    "source": "training_window_only"
                   }
                 }
               ]
@@ -1630,45 +2526,169 @@
         }
       },
       "14d": {
-        "best_model": "logistic_regression",
+        "best_model": "xgboost",
         "selection_method": "Highest mean rolling-origin balanced accuracy, then macro F1 and accuracy; final holdout excluded from model selection.",
+        "reliability": {
+          "status": "experimental_not_trustworthy",
+          "gate_is_project_defined": true,
+          "checks": {
+            "balanced_accuracy_at_least_0_55": false,
+            "macro_f1_at_least_0_45": false,
+            "balanced_accuracy_beats_baseline_by_0_05": true
+          },
+          "balanced_accuracy_improvement_over_baseline": 0.0567,
+          "required": {
+            "mean_balanced_accuracy": 0.55,
+            "mean_macro_f1": 0.45,
+            "minimum_balanced_accuracy_improvement_over_baseline": 0.05
+          }
+        },
+        "baseline": {
+          "aggregate_metrics": {
+            "accuracy": 0.0903,
+            "balanced_accuracy": 0.3333,
+            "f1_macro": 0.0534
+          },
+          "folds": [
+            {
+              "fold": 1,
+              "training_rows": 528,
+              "test_rows": 107,
+              "purge_gap_rows": 14,
+              "actual_purged_rows": 10,
+              "train_start": "2022-02-16",
+              "train_end": "2024-04-09",
+              "test_start": "2024-04-25",
+              "test_end": "2024-10-03",
+              "train_class_distribution": {
+                "Low": 264,
+                "Medium": 158,
+                "High": 106
+              },
+              "test_class_distribution": {
+                "Low": 13,
+                "Medium": 8,
+                "High": 86
+              },
+              "metrics": {
+                "accuracy": 0.1215,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.0722
+              },
+              "label_thresholds": {
+                "low_max": -0.0016583075658202998,
+                "medium_max": 0.0022023075492083,
+                "source": "training_window_only"
+              }
+            },
+            {
+              "fold": 2,
+              "training_rows": 635,
+              "test_rows": 108,
+              "purge_gap_rows": 14,
+              "actual_purged_rows": 10,
+              "train_start": "2022-02-16",
+              "train_end": "2024-09-19",
+              "test_start": "2024-10-04",
+              "test_end": "2025-03-11",
+              "train_class_distribution": {
+                "Low": 318,
+                "Medium": 190,
+                "High": 127
+              },
+              "test_class_distribution": {
+                "Low": 1,
+                "Medium": 69,
+                "High": 38
+              },
+              "metrics": {
+                "accuracy": 0.0093,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.0061
+              },
+              "label_thresholds": {
+                "low_max": -0.0011411441599797,
+                "medium_max": 0.004804823238932263,
+                "source": "training_window_only"
+              }
+            },
+            {
+              "fold": 3,
+              "training_rows": 743,
+              "test_rows": 107,
+              "purge_gap_rows": 14,
+              "actual_purged_rows": 10,
+              "train_start": "2022-02-16",
+              "train_end": "2025-02-25",
+              "test_start": "2025-03-12",
+              "test_end": "2025-08-26",
+              "train_class_distribution": {
+                "Low": 372,
+                "Medium": 222,
+                "High": 149
+              },
+              "test_class_distribution": {
+                "Low": 15,
+                "Medium": 84,
+                "High": 8
+              },
+              "metrics": {
+                "accuracy": 0.1402,
+                "balanced_accuracy": 0.3333,
+                "f1_macro": 0.082
+              },
+              "label_thresholds": {
+                "low_max": 0.0001918484318705,
+                "medium_max": 0.005340736393522941,
+                "source": "training_window_only"
+              }
+            }
+          ]
+        },
+        "holdout_label_thresholds": {
+          "low_max": 0.0007466684942258,
+          "medium_max": 0.0050366875516236,
+          "source": "training_window_only"
+        },
         "model_file": "risk_model_KES_14d.pkl",
-        "training_rows": 1283,
-        "test_rows": 325,
-        "deployment_training_rows": 1622,
+        "training_rows": 851,
+        "test_rows": 216,
+        "deployment_training_rows": 1076,
         "purge_gap_rows": 14,
-        "train_start": "2022-02-03",
-        "train_end": "2025-08-08",
-        "test_start": "2025-08-23",
+        "purge_rule": "remove training rows whose future outcome date reaches the test period",
+        "actual_purged_rows": 9,
+        "train_start": "2022-02-16",
+        "train_end": "2025-08-12",
+        "test_start": "2025-08-27",
         "test_end": "2026-07-13",
-        "deployment_train_start": "2022-02-03",
+        "deployment_train_start": "2022-02-16",
         "deployment_train_end": "2026-07-13",
         "class_distribution": {
-          "Low": 809,
-          "Medium": 482,
-          "High": 331
+          "Low": 534,
+          "Medium": 321,
+          "High": 221
         },
         "test_class_distribution": {
-          "Low": 167,
-          "Medium": 138,
-          "High": 20
+          "Low": 128,
+          "Medium": 79,
+          "High": 9
         },
         "evaluation_note": null,
         "evaluations": {
           "logistic_regression": {
-            "accuracy": 0.4246,
+            "accuracy": 0.3657,
             "balanced_accuracy": 0.3333,
-            "f1_macro": 0.1987
+            "f1_macro": 0.1785
           },
           "random_forest": {
-            "accuracy": 0.4431,
-            "balanced_accuracy": 0.4333,
-            "f1_macro": 0.3499
+            "accuracy": 0.3657,
+            "balanced_accuracy": 0.3333,
+            "f1_macro": 0.1785
           },
           "xgboost": {
-            "accuracy": 0.4246,
-            "balanced_accuracy": 0.3333,
-            "f1_macro": 0.1987
+            "accuracy": 0.3843,
+            "balanced_accuracy": 0.3341,
+            "f1_macro": 0.222
           }
         },
         "backtest": {
@@ -1679,252 +2699,306 @@
           "candidates": {
             "logistic_regression": {
               "aggregate_metrics": {
-                "accuracy": 0.4506,
-                "balanced_accuracy": 0.3756,
-                "f1_macro": 0.2389
+                "accuracy": 0.5058,
+                "balanced_accuracy": 0.3451,
+                "f1_macro": 0.2193
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 797,
-                  "test_rows": 162,
+                  "training_rows": 528,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-09",
-                  "test_start": "2024-04-24",
-                  "test_end": "2024-10-02",
+                  "test_start": "2024-04-25",
+                  "test_end": "2024-10-03",
                   "train_class_distribution": {
-                    "Low": 558,
-                    "Medium": 134,
-                    "High": 105
+                    "Low": 264,
+                    "Medium": 158,
+                    "High": 106
                   },
                   "test_class_distribution": {
-                    "Low": 27,
-                    "Medium": 28,
-                    "High": 107
+                    "Low": 13,
+                    "Medium": 8,
+                    "High": 86
                   },
                   "metrics": {
-                    "accuracy": 0.2346,
-                    "balanced_accuracy": 0.463,
-                    "f1_macro": 0.2422
+                    "accuracy": 0.0935,
+                    "balanced_accuracy": 0.3686,
+                    "f1_macro": 0.1048
+                  },
+                  "label_thresholds": {
+                    "low_max": -0.0016583075658202998,
+                    "medium_max": 0.0022023075492083,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 959,
-                  "test_rows": 162,
+                  "training_rows": 635,
+                  "test_rows": 108,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-18",
-                  "test_start": "2024-10-03",
-                  "test_end": "2025-03-13",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-09-19",
+                  "test_start": "2024-10-04",
+                  "test_end": "2025-03-11",
                   "train_class_distribution": {
-                    "Low": 599,
-                    "Medium": 162,
-                    "High": 198
+                    "Low": 318,
+                    "Medium": 190,
+                    "High": 127
                   },
                   "test_class_distribution": {
-                    "Low": 16,
+                    "Low": 1,
                     "Medium": 69,
-                    "High": 77
+                    "High": 38
                   },
                   "metrics": {
-                    "accuracy": 0.4259,
+                    "accuracy": 0.6389,
                     "balanced_accuracy": 0.3333,
-                    "f1_macro": 0.1991
+                    "f1_macro": 0.2599
+                  },
+                  "label_thresholds": {
+                    "low_max": -0.0011411441599797,
+                    "medium_max": 0.004804823238932263,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1121,
-                  "test_rows": 162,
+                  "training_rows": 743,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-02-27",
-                  "test_start": "2025-03-14",
-                  "test_end": "2025-08-22",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-02-25",
+                  "test_start": "2025-03-12",
+                  "test_end": "2025-08-26",
                   "train_class_distribution": {
-                    "Low": 615,
-                    "Medium": 217,
-                    "High": 289
+                    "Low": 372,
+                    "Medium": 222,
+                    "High": 149
                   },
                   "test_class_distribution": {
-                    "Low": 27,
-                    "Medium": 113,
-                    "High": 22
+                    "Low": 15,
+                    "Medium": 84,
+                    "High": 8
                   },
                   "metrics": {
-                    "accuracy": 0.6914,
-                    "balanced_accuracy": 0.3304,
-                    "f1_macro": 0.2755
+                    "accuracy": 0.785,
+                    "balanced_accuracy": 0.3333,
+                    "f1_macro": 0.2932
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0001918484318705,
+                    "medium_max": 0.005340736393522941,
+                    "source": "training_window_only"
                   }
                 }
               ]
             },
             "random_forest": {
               "aggregate_metrics": {
-                "accuracy": 0.3313,
-                "balanced_accuracy": 0.3539,
-                "f1_macro": 0.2173
+                "accuracy": 0.4839,
+                "balanced_accuracy": 0.3334,
+                "f1_macro": 0.263
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 797,
-                  "test_rows": 162,
+                  "training_rows": 528,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-09",
-                  "test_start": "2024-04-24",
-                  "test_end": "2024-10-02",
+                  "test_start": "2024-04-25",
+                  "test_end": "2024-10-03",
                   "train_class_distribution": {
-                    "Low": 558,
-                    "Medium": 134,
-                    "High": 105
+                    "Low": 264,
+                    "Medium": 158,
+                    "High": 106
                   },
                   "test_class_distribution": {
-                    "Low": 27,
-                    "Medium": 28,
-                    "High": 107
+                    "Low": 13,
+                    "Medium": 8,
+                    "High": 86
                   },
                   "metrics": {
-                    "accuracy": 0.358,
-                    "balanced_accuracy": 0.3561,
-                    "f1_macro": 0.258
+                    "accuracy": 0.4112,
+                    "balanced_accuracy": 0.2141,
+                    "f1_macro": 0.223
+                  },
+                  "label_thresholds": {
+                    "low_max": -0.0016583075658202998,
+                    "medium_max": 0.0022023075492083,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 959,
-                  "test_rows": 162,
+                  "training_rows": 635,
+                  "test_rows": 108,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-18",
-                  "test_start": "2024-10-03",
-                  "test_end": "2025-03-13",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-09-19",
+                  "test_start": "2024-10-04",
+                  "test_end": "2025-03-11",
                   "train_class_distribution": {
-                    "Low": 599,
-                    "Medium": 162,
-                    "High": 198
+                    "Low": 318,
+                    "Medium": 190,
+                    "High": 127
                   },
                   "test_class_distribution": {
-                    "Low": 16,
+                    "Low": 1,
                     "Medium": 69,
-                    "High": 77
+                    "High": 38
                   },
                   "metrics": {
-                    "accuracy": 0.4506,
-                    "balanced_accuracy": 0.3486,
-                    "f1_macro": 0.2659
+                    "accuracy": 0.6667,
+                    "balanced_accuracy": 0.3636,
+                    "f1_macro": 0.3256
+                  },
+                  "label_thresholds": {
+                    "low_max": -0.0011411441599797,
+                    "medium_max": 0.004804823238932263,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1121,
-                  "test_rows": 162,
+                  "training_rows": 743,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-02-27",
-                  "test_start": "2025-03-14",
-                  "test_end": "2025-08-22",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-02-25",
+                  "test_start": "2025-03-12",
+                  "test_end": "2025-08-26",
                   "train_class_distribution": {
-                    "Low": 615,
-                    "Medium": 217,
-                    "High": 289
+                    "Low": 372,
+                    "Medium": 222,
+                    "High": 149
                   },
                   "test_class_distribution": {
-                    "Low": 27,
-                    "Medium": 113,
-                    "High": 22
+                    "Low": 15,
+                    "Medium": 84,
+                    "High": 8
                   },
                   "metrics": {
-                    "accuracy": 0.1852,
-                    "balanced_accuracy": 0.3569,
-                    "f1_macro": 0.1279
+                    "accuracy": 0.3738,
+                    "balanced_accuracy": 0.4226,
+                    "f1_macro": 0.2403
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0001918484318705,
+                    "medium_max": 0.005340736393522941,
+                    "source": "training_window_only"
                   }
                 }
               ]
             },
             "xgboost": {
               "aggregate_metrics": {
-                "accuracy": 0.3066,
-                "balanced_accuracy": 0.3595,
-                "f1_macro": 0.2473
+                "accuracy": 0.3535,
+                "balanced_accuracy": 0.39,
+                "f1_macro": 0.2315
               },
               "folds": [
                 {
                   "fold": 1,
-                  "training_rows": 797,
-                  "test_rows": 162,
+                  "training_rows": 528,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
                   "train_end": "2024-04-09",
-                  "test_start": "2024-04-24",
-                  "test_end": "2024-10-02",
+                  "test_start": "2024-04-25",
+                  "test_end": "2024-10-03",
                   "train_class_distribution": {
-                    "Low": 558,
-                    "Medium": 134,
-                    "High": 105
+                    "Low": 264,
+                    "Medium": 158,
+                    "High": 106
                   },
                   "test_class_distribution": {
-                    "Low": 27,
-                    "Medium": 28,
-                    "High": 107
+                    "Low": 13,
+                    "Medium": 8,
+                    "High": 86
                   },
                   "metrics": {
-                    "accuracy": 0.321,
-                    "balanced_accuracy": 0.3004,
-                    "f1_macro": 0.2291
+                    "accuracy": 0.1402,
+                    "balanced_accuracy": 0.3411,
+                    "f1_macro": 0.0886
+                  },
+                  "label_thresholds": {
+                    "low_max": -0.0016583075658202998,
+                    "medium_max": 0.0022023075492083,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 2,
-                  "training_rows": 959,
-                  "test_rows": 162,
+                  "training_rows": 635,
+                  "test_rows": 108,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2024-09-18",
-                  "test_start": "2024-10-03",
-                  "test_end": "2025-03-13",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2024-09-19",
+                  "test_start": "2024-10-04",
+                  "test_end": "2025-03-11",
                   "train_class_distribution": {
-                    "Low": 599,
-                    "Medium": 162,
-                    "High": 198
+                    "Low": 318,
+                    "Medium": 190,
+                    "High": 127
                   },
                   "test_class_distribution": {
-                    "Low": 16,
+                    "Low": 1,
                     "Medium": 69,
-                    "High": 77
+                    "High": 38
                   },
                   "metrics": {
-                    "accuracy": 0.4136,
-                    "balanced_accuracy": 0.4211,
-                    "f1_macro": 0.385
+                    "accuracy": 0.537,
+                    "balanced_accuracy": 0.4024,
+                    "f1_macro": 0.3593
+                  },
+                  "label_thresholds": {
+                    "low_max": -0.0011411441599797,
+                    "medium_max": 0.004804823238932263,
+                    "source": "training_window_only"
                   }
                 },
                 {
                   "fold": 3,
-                  "training_rows": 1121,
-                  "test_rows": 162,
+                  "training_rows": 743,
+                  "test_rows": 107,
                   "purge_gap_rows": 14,
-                  "train_start": "2022-02-03",
-                  "train_end": "2025-02-27",
-                  "test_start": "2025-03-14",
-                  "test_end": "2025-08-22",
+                  "actual_purged_rows": 10,
+                  "train_start": "2022-02-16",
+                  "train_end": "2025-02-25",
+                  "test_start": "2025-03-12",
+                  "test_end": "2025-08-26",
                   "train_class_distribution": {
-                    "Low": 615,
-                    "Medium": 217,
-                    "High": 289
+                    "Low": 372,
+                    "Medium": 222,
+                    "High": 149
                   },
                   "test_class_distribution": {
-                    "Low": 27,
-                    "Medium": 113,
-                    "High": 22
+                    "Low": 15,
+                    "Medium": 84,
+                    "High": 8
                   },
                   "metrics": {
-                    "accuracy": 0.1852,
-                    "balanced_accuracy": 0.3569,
-                    "f1_macro": 0.1279
+                    "accuracy": 0.3832,
+                    "balanced_accuracy": 0.4266,
+                    "f1_macro": 0.2465
+                  },
+                  "label_thresholds": {
+                    "low_max": 0.0001918484318705,
+                    "medium_max": 0.005340736393522941,
+                    "source": "training_window_only"
                   }
                 }
               ]

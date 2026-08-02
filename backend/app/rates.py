@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA_PATH = ROOT / "data" / "processed" / "multicurrency_daily_calendar.csv"
+OBSERVATIONS_PATH = ROOT / "data" / "processed" / "multicurrency_bnr_observations.csv"
 METADATA_PATH = ROOT / "data" / "processed" / "multicurrency_data_metadata.json"
 
 CURRENCY_INFO = {
@@ -21,6 +22,7 @@ CURRENCY_INFO = {
 SUPPORTED_CURRENCIES = tuple(CURRENCY_INFO)
 
 _local_daily: pd.DataFrame | None = None
+_local_observations: pd.DataFrame | None = None
 
 
 def validate_currency(currency: str) -> str:
@@ -64,6 +66,21 @@ def combined_daily(currency: str, allow_live: bool = True) -> pd.DataFrame:
     return selected.reset_index(drop=True)
 
 
+def official_observations(currency: str) -> pd.DataFrame:
+    """Return actual BNR postings, excluding synthesized calendar rows."""
+    import pandas as pd
+
+    global _local_observations
+    code = validate_currency(currency)
+    if _local_observations is None:
+        if not OBSERVATIONS_PATH.exists():
+            raise FileNotFoundError(f"Official-observation dataset is missing: {OBSERVATIONS_PATH}")
+        _local_observations = pd.read_csv(OBSERVATIONS_PATH, parse_dates=["date"]).sort_values(
+            ["currency", "date"]
+        ).reset_index(drop=True)
+    return _local_observations.loc[_local_observations["currency"] == code].copy()
+
+
 def add_features(frame: pd.DataFrame) -> pd.DataFrame:
     result = frame.sort_values("date").copy()
     result["daily_return"] = result["mid_rate"].pct_change(fill_method=None)
@@ -87,7 +104,7 @@ def add_features(frame: pd.DataFrame) -> pd.DataFrame:
 
 
 def latest_feature_row(currency: str, feature_columns: list[str]) -> pd.Series:
-    features = add_features(combined_daily(currency))
+    features = add_features(official_observations(currency))
     ready = features.dropna(subset=feature_columns)
     if ready.empty:
         raise RuntimeError(f"No complete feature row is available for {currency}.")

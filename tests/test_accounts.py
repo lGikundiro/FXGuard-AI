@@ -28,6 +28,7 @@ class AccountFoundationTests(unittest.TestCase):
             "currency": "USD",
             "amount": 1000,
             "horizon_days": 7,
+            "payment_date": "2026-07-24",
             "risk_level": "Medium",
             "confidence_score": 0.72,
             "current_rate": 1450.25,
@@ -47,6 +48,7 @@ class AccountFoundationTests(unittest.TestCase):
         self.assertEqual(record["currency"], "USD")
         self.assertEqual(record["likelihood_probability"], 0.72)
         self.assertEqual(record["rate_date"], "2026-07-17")
+        self.assertEqual(record["payment_date"], "2026-07-24")
         self.assertEqual(record["model_version"], "2026-07-19T13:14:08+00:00")
         self.assertEqual(record["result"]["risk_level"], "Medium")
         self.assertEqual(len(record["signature"]), 64)
@@ -197,6 +199,12 @@ class AccountFoundationTests(unittest.TestCase):
         self.assertIn("where id = (select auth.uid())", deletion_migration.lower())
         self.assertIn("revoke all", deletion_migration.lower())
         self.assertIn("to authenticated", deletion_migration.lower())
+        flexible_migration = (
+            migration_dir / "003_flexible_payment_dates.sql"
+        ).read_text(encoding="utf-8").lower()
+        self.assertIn("horizon_days between 1 and 100", flexible_migration)
+        self.assertIn("add column if not exists payment_date date", flexible_migration)
+        self.assertIn("alter column payment_date set not null", flexible_migration)
 
     def test_account_deletion_uses_scoped_rpc_without_service_key(self):
         now = datetime.now(timezone.utc).isoformat()

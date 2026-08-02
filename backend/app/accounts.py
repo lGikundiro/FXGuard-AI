@@ -347,8 +347,11 @@ def normalise_saved_check(payload: SavedCheckRequest, user_id: str) -> dict[str,
     if currency not in {"USD", "EUR", "KES"}:
         raise HTTPException(status_code=400, detail="This result has an unsupported currency.")
     horizon = int(result.get("horizon_days") or 0)
-    if horizon not in (7, 14):
+    if not 1 <= horizon <= 100:
         raise HTTPException(status_code=400, detail="This result has an unsupported period.")
+    payment_date = str(result.get("payment_date") or "")
+    if not payment_date:
+        raise HTTPException(status_code=400, detail="This result has no payment date.")
     risk_level = str(result.get("risk_level") or "")
     if risk_level not in {"Low", "Medium", "High"}:
         raise HTTPException(status_code=400, detail="This result has an invalid risk level.")
@@ -356,7 +359,7 @@ def normalise_saved_check(payload: SavedCheckRequest, user_id: str) -> dict[str,
     if amount <= 0:
         raise HTTPException(status_code=400, detail="This result has an invalid invoice amount.")
 
-    signature_source = f"{currency}|{amount:.4f}|{horizon}"
+    signature_source = f"{currency}|{amount:.4f}|{payment_date}"
     signature = hashlib.sha256(signature_source.encode("utf-8")).hexdigest()
     checked_at = payload.checked_at or datetime.now(timezone.utc)
     return {
@@ -366,6 +369,7 @@ def normalise_saved_check(payload: SavedCheckRequest, user_id: str) -> dict[str,
         "currency": currency,
         "amount": amount,
         "horizon_days": horizon,
+        "payment_date": payment_date,
         "risk_level": risk_level,
         "likelihood_probability": result.get("confidence_score", result.get("confidence")),
         "current_rate": result.get("current_rate"),
@@ -384,6 +388,7 @@ def _check_for_frontend(row: dict[str, Any]) -> dict[str, Any]:
         "amount": row.get("amount"),
         "currency": row.get("currency"),
         "horizon": row.get("horizon_days"),
+        "paymentDate": (row.get("result") or {}).get("payment_date"),
         "risk": row.get("risk_level"),
         "cost": row.get("current_cost_rwf"),
         "extra": row.get("estimated_extra_cost_rwf"),
