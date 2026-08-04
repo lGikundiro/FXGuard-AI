@@ -4,7 +4,7 @@ FXGuard AI is a machine learning-driven, progressive web application for classif
 
 The prototype supports **USD, EUR, and KES against RWF**. Users select an invoice payment date from tomorrow through 100 days ahead; each currency has one horizon-aware classifier trained on every integer period from 1 to 100 calendar days.
 
-Fast-loading interface: https://fxguard-ai-web.onrender.com/
+Hosted version: https://fxguard-ai-web.onrender.com/
 
 API and fallback interface: https://fxguard-ai.onrender.com/
 
